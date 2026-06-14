@@ -67,8 +67,7 @@ router.get('/balances/net', async (req, res) => {
     const { data: members, error: memErr } = await supabase
       .from('group_members')
       .select('group_id')
-      .eq('user_id', userId)
-      .is('left_at', null);
+      .eq('user_id', userId);
 
     if (memErr) throw memErr;
 

@@ -4,11 +4,8 @@ import { fetchApi } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { FiArrowRight, FiUsers, FiDatabase, FiUploadCloud, FiBarChart2, FiArrowUpRight, FiArrowDownRight, FiPieChart } from 'react-icons/fi';
 
-// Simple in-memory cache
-const cache = { admin: null, user: null };
-
 export default function Dashboard() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   
@@ -16,22 +13,10 @@ export default function Dashboard() {
     async function loadDashboardData() {
       try {
         if (isAdmin) {
-          if (cache.admin) {
-            setAnalytics(cache.admin);
-            setLoading(false);
-            return;
-          }
           const stats = await fetchApi('/api/admin/analytics');
-          cache.admin = stats;
           setAnalytics(stats);
         } else {
-          if (cache.user) {
-            setAnalytics(cache.user);
-            setLoading(false);
-            return;
-          }
           const balanceData = await fetchApi('/api/balances/net');
-          cache.user = balanceData;
           setAnalytics(balanceData);
         }
       } catch (err) {
@@ -41,7 +26,7 @@ export default function Dashboard() {
       }
     }
     loadDashboardData();
-  }, [isAdmin]);
+  }, [isAdmin, user?.id]);
 
   if (loading) {
     if (isAdmin) {
