@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { FiSlack } from 'react-icons/fi';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -37,25 +38,23 @@ export default function Login() {
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-border-default opacity-30 blur-3xl mix-blend-multiply pointer-events-none"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-border-default opacity-30 blur-3xl mix-blend-multiply pointer-events-none"></div>
 
-      <div className="w-full max-w-[420px] bg-bg-surface/80 backdrop-blur-xl border border-border-subtle rounded-xl p-8 sm:p-10 shadow-xl relative z-10">
+      <div className="w-full max-w-[420px] bg-bg-surface/80 backdrop-blur-xl rounded p-4 sm:p-6 relative z-10">
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 bg-accent rounded-xl flex items-center justify-center mb-4 shadow-md rotate-3 hover:rotate-0 transition-transform duration-300">
-            <span className="text-bg-surface font-bold text-xl">S</span>
-          </div>
-          <h1 className="text-2xl font-bold text-text-primary tracking-tight">Welcome to Splito</h1>
-          <p className="text-sm text-text-secondary mt-2">Sign in to manage your shared expenses</p>
+          <h1 className="text-3xl font-bold text-text-primary tracking-tight flex items-center gap-2">
+            Splito <FiSlack className="text-text-primary" />
+          </h1>
         </div>
 
         <form onSubmit={handleLogin} className="flex flex-col gap-5">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm text-text-primary font-medium ml-1" htmlFor="email">
-              Email Address
+              Email Address<span className="text-error">*</span>
             </label>
             <input
               id="email"
               type="email"
               placeholder="you@example.com"
-              className={`bg-bg-input border ${error ? 'border-error' : 'border-border-default focus:border-border-focus focus:ring-4 focus:ring-accent-subtle'} rounded-base px-4 py-3 text-sm text-text-primary outline-none transition-all duration-200 placeholder-text-tertiary shadow-sm`}
+              className={`bg-bg-base/60 border-b-2 ${error ? 'border-error' : 'border-transparent focus:border-text-primary'} rounded-t px-4 py-3 text-sm text-text-primary outline-none transition-all duration-200 placeholder-text-secondary`}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -64,13 +63,13 @@ export default function Login() {
 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm text-text-primary font-medium ml-1" htmlFor="password">
-              Password
+              Password<span className="text-error">*</span>
             </label>
             <input
               id="password"
               type="password"
               placeholder="••••••••"
-              className={`bg-bg-input border ${error ? 'border-error' : 'border-border-default focus:border-border-focus focus:ring-4 focus:ring-accent-subtle'} rounded-base px-4 py-3 text-sm text-text-primary outline-none transition-all duration-200 placeholder-text-tertiary shadow-sm`}
+              className={`bg-bg-base/60 border-b-2 ${error ? 'border-error' : 'border-transparent focus:border-text-primary'} rounded-t px-4 py-3 text-sm text-text-primary outline-none transition-all duration-200 placeholder-text-secondary`}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -81,13 +80,13 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-4 w-full bg-accent hover:bg-accent-hover text-text-inverse font-medium text-sm py-3 px-4 rounded-base transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5"
+            className="mt-4 w-full bg-accent text-text-inverse font-medium text-sm py-3 px-4 rounded transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Authenticating...' : 'Sign In'}
+            {loading ? 'Authenticating...' : 'Sign In →'}
           </button>
         </form>
 
-        <p className="text-xs text-text-tertiary mt-8 text-center border-t border-border-subtle pt-6">
+        <p className="text-xs text-text-secondary mt-6 text-center">
           Having trouble? Contact your group admin to verify your access.
         </p>
       </div>

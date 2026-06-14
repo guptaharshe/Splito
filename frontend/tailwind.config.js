@@ -6,10 +6,10 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'bg-base': '#FAFAFA', // Off-white
+        'bg-base': '#E4E4E7', // Zinc-200
         'bg-surface': '#FFFFFF',
-        'bg-elevated': '#F4F4F5',
-        'bg-input': '#FFFFFF',
+        'bg-elevated': '#D4D4D8',
+        'bg-input': '#F4F4F5',
         'border-subtle': '#E4E4E7',
         'border-default': '#D4D4D8',
         'border-focus': '#A1A1AA',
