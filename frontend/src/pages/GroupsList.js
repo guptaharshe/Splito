@@ -1,22 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchApi } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 import { FiArrowRight, FiPlus, FiUsers, FiCalendar } from 'react-icons/fi';
 
 export default function GroupsList() {
+  const { isAdmin } = useAuth();
   const [groups, setGroups] = useState([]);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadGroups() {
       try {
-        const [groupsData, userData] = await Promise.all([
-          fetchApi('/api/groups'),
-          fetchApi('/api/auth/me')
-        ]);
+        const groupsData = await fetchApi('/api/groups');
         setGroups(groupsData.groups || []);
-        setIsAdmin(userData.user && userData.user.role === 'admin');
       } catch (err) {
         console.error('Failed to load groups:', err);
       } finally {

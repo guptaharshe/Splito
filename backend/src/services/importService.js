@@ -201,6 +201,29 @@ function detectAnomalies(rows, knownUsers) {
       });
     }
 
+    // Timeline anomalies
+    const expenseDateStr = finalRow.date;
+    if (expenseDateStr && !isNaN(new Date(expenseDateStr).getTime())) {
+      const expenseDate = new Date(expenseDateStr);
+      const checkTimeline = (userName, roleContext) => {
+        const u = userMap[userName.toLowerCase()];
+        if (!u) return;
+        if (u.joined_at && expenseDate < new Date(u.joined_at.split('T')[0])) {
+          flag('Timeline violation', `${userName} (${roleContext}) is involved on ${expenseDateStr} but joined on ${u.joined_at.split('T')[0]}.`, 'Exclude user or correct date.', 'BLOCKING');
+        }
+        if (u.left_at && expenseDate > new Date(u.left_at.split('T')[0])) {
+          flag('Timeline violation', `${userName} (${roleContext}) is involved on ${expenseDateStr} but left on ${u.left_at.split('T')[0]}.`, 'Exclude user or correct date.', 'BLOCKING');
+        }
+      };
+
+      if (finalRow.paidBy) checkTimeline(finalRow.paidBy, 'Payer');
+      
+      if (row.splitDetails) {
+        const names = row.splitDetails.match(/[A-Z][a-z]+/g) || [];
+        names.forEach(name => checkTimeline(name, 'Split member'));
+      }
+    }
+
     if (isClean) {
       cleanRows.push(finalRow);
     }

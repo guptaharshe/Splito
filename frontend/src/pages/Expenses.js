@@ -1,27 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchApi } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 import { FiArrowLeft } from 'react-icons/fi';
 
 export default function Expenses() {
   const { id: groupId } = useParams();
+  const { isAdmin } = useAuth();
   const [expenses, setExpenses] = useState([]);
   const [group, setGroup] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [groupData, expensesData, authData] = await Promise.all([
+        const [groupData, expensesData] = await Promise.all([
           fetchApi(`/api/groups/${groupId}`),
-          fetchApi(`/api/groups/${groupId}/expenses`),
-          fetchApi('/api/auth/me')
+          fetchApi(`/api/groups/${groupId}/expenses`)
         ]);
         setGroup(groupData.group);
         setExpenses(expensesData.expenses);
-        setIsAdmin(authData.user?.role === 'admin');
       } catch (err) {
         setError(err.message);
       } finally {

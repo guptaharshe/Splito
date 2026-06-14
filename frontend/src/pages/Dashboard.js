@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchApi } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 import { FiArrowRight, FiPlus, FiDollarSign, FiActivity, FiUsers, FiDatabase, FiUploadCloud, FiBarChart2 } from 'react-icons/fi';
 
+// Simple in-memory cache
+const cache = { admin: null, user: null };
+
 export default function Dashboard() {
+  const { isAdmin } = useAuth();
   const [groups, setGroups] = useState([]);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [netBalance, setNetBalance] = useState(0);
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -13,20 +17,31 @@ export default function Dashboard() {
   useEffect(() => {
     async function loadDashboardData() {
       try {
-        const userData = await fetchApi('/api/auth/me');
-        const adminStatus = userData.user && userData.user.role === 'admin';
-        setIsAdmin(adminStatus);
-
-        if (adminStatus) {
+        if (isAdmin) {
+          if (cache.admin) {
+            setAnalytics(cache.admin);
+            setLoading(false);
+            return;
+          }
           const stats = await fetchApi('/api/admin/analytics');
+          cache.admin = stats;
           setAnalytics(stats);
         } else {
+          if (cache.user) {
+            setGroups(cache.user.groups);
+            setNetBalance(cache.user.netBalance);
+            setLoading(false);
+            return;
+          }
           const [groupsData, balanceData] = await Promise.all([
             fetchApi('/api/groups'),
             fetchApi('/api/balances/net')
           ]);
-          setGroups(groupsData.groups || []);
-          setNetBalance(balanceData.netBalancePaise || 0);
+          const g = groupsData.groups || [];
+          const b = balanceData.netBalancePaise || 0;
+          cache.user = { groups: g, netBalance: b };
+          setGroups(g);
+          setNetBalance(b);
         }
       } catch (err) {
         console.error('Failed to load dashboard data:', err);
@@ -35,18 +50,83 @@ export default function Dashboard() {
       }
     }
     loadDashboardData();
-  }, []);
+  }, [isAdmin]);
 
   if (loading) {
-    return (
-      <div className="px-8 py-2 max-w-7xl mx-auto flex flex-col gap-8 animate-pulse mt-4">
-        <div className="w-48 h-8 bg-border-default/40 rounded"></div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="h-32 bg-border-default/30 rounded"></div>
-          <div className="h-32 bg-border-default/30 rounded"></div>
-          <div className="h-32 bg-border-default/30 rounded"></div>
+    if (isAdmin) {
+      // Admin skeleton — matches System Analytics layout
+      return (
+        <div className="px-8 py-2 max-w-7xl mx-auto flex flex-col gap-8 animate-pulse">
+          <h1 className="text-2xl font-bold text-text-primary tracking-tight mb-1">System Analytics</h1>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="bg-bg-surface border border-border-subtle rounded p-4 flex flex-col items-center justify-center gap-3">
+                <div className="w-8 h-8 bg-border-default/40 rounded-full"></div>
+                <div className="h-3 w-24 bg-border-default/30 rounded"></div>
+                <div className="h-8 w-16 bg-border-default/40 rounded"></div>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-bg-surface border border-border-subtle rounded p-4 mt-4">
+            <div className="h-5 w-52 bg-border-default/40 rounded mb-4"></div>
+            <div className="flex flex-col md:flex-row gap-6 items-center rounded px-3 py-2 bg-bg-base">
+              <div className="flex-1 flex flex-col gap-3">
+                <div className="h-5 w-36 bg-border-default/40 rounded"></div>
+                <div className="h-3 w-full bg-border-default/30 rounded"></div>
+                <div className="h-3 w-3/4 bg-border-default/30 rounded"></div>
+                <div className="h-10 w-44 bg-border-default/40 rounded mt-2"></div>
+              </div>
+              <div className="text-center p-4 border-l border-border-subtle pl-8 flex flex-col items-center gap-2">
+                <div className="h-8 w-12 bg-border-default/40 rounded"></div>
+                <div className="h-3 w-20 bg-border-default/30 rounded"></div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="h-48 bg-border-default/30 rounded mt-4"></div>
+      );
+    }
+
+    // User skeleton — matches balance card + groups + actions layout
+    return (
+      <div className="p-8 max-w-[1100px] mx-auto flex flex-col gap-8 animate-pulse">
+        <div className="bg-bg-surface border border-border-subtle rounded-md p-8 flex flex-col items-center justify-center gap-3">
+          <div className="h-3 w-40 bg-border-default/30 rounded"></div>
+          <div className="h-12 w-48 bg-border-default/40 rounded"></div>
+          <div className="h-3 w-56 bg-border-default/30 rounded"></div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div className="h-5 w-28 bg-border-default/40 rounded"></div>
+              <div className="h-4 w-24 bg-border-default/30 rounded"></div>
+            </div>
+            {[1, 2].map(i => (
+              <div key={i} className="bg-bg-surface border border-border-subtle rounded-md p-5 flex justify-between items-center">
+                <div className="flex flex-col gap-2">
+                  <div className="h-5 w-32 bg-border-default/40 rounded"></div>
+                  <div className="h-3 w-48 bg-border-default/30 rounded"></div>
+                </div>
+                <div className="h-5 w-5 bg-border-default/30 rounded"></div>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-3">
+              <div className="h-5 w-28 bg-border-default/40 rounded"></div>
+              <div className="h-10 w-full bg-border-default/40 rounded"></div>
+              <div className="h-10 w-full bg-border-default/30 rounded"></div>
+            </div>
+            <div className="flex flex-col gap-3">
+              <div className="h-5 w-32 bg-border-default/40 rounded"></div>
+              <div className="bg-bg-surface border border-border-subtle rounded-md p-4">
+                <div className="h-4 w-36 bg-border-default/30 rounded mx-auto"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

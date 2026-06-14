@@ -29,16 +29,30 @@ router.post('/import', upload.single('file'), async (req, res) => {
     return res.status(400).json({ error: 'No file uploaded' });
   }
 
+  const { groupId } = req.body;
+  if (!groupId) {
+    return res.status(400).json({ error: 'Group ID is required' });
+  }
+
   try {
     // 1. Fetch known users for anomaly detection
     const { data: users, error: usersError } = await supabase.from('users').select('id, name');
     if (usersError) throw usersError;
 
+    // 1b. Fetch group timeline for the selected group
+    const { data: m, error: mError } = await supabase.from('group_members').select('user_id, joined_at, left_at').eq('group_id', groupId);
+    const members = m || [];
+
+    const usersWithTimeline = users.map(u => {
+      const mem = members.find(m => m.user_id === u.id);
+      return { ...u, joined_at: mem?.joined_at, left_at: mem?.left_at };
+    });
+
     // 2. Parse CSV
     const rows = await parseCSV(req.file.path);
 
     // 3. Detect anomalies
-    const { cleanRows, anomalies } = detectAnomalies(rows, users);
+    const { cleanRows, anomalies } = detectAnomalies(rows, usersWithTimeline);
 
     // 4. Create import batch
     const { data: batch, error: batchError } = await supabase
