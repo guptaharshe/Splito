@@ -74,14 +74,6 @@ export default function Expenses() {
             >
               <FiArrowLeft size={16} /> Back to Group
             </Link>
-            {!isAdmin && (
-              <Link 
-                to={`/groups/${groupId}/expenses/new`}
-                className="bg-accent hover:bg-accent-hover text-text-inverse px-4 py-2 text-sm font-medium rounded transition-colors flex items-center"
-              >
-                + Add Expense
-              </Link>
-            )}
           </div>
         </div>
 
@@ -99,7 +91,7 @@ export default function Expenses() {
                 </tr>
               ) : (
                 expenses.map(expense => (
-                  <tr key={expense.id} className="transition-colors group hover:bg-bg-elevated">
+                  <tr key={expense.id} className="transition-colors group">
                     <td className="px-4 py-4 align-middle text-sm text-text-secondary whitespace-nowrap w-32">
                       {new Date(expense.expense_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-')}
                     </td>
@@ -113,7 +105,20 @@ export default function Expenses() {
                       ₹{(expense.amount_paise / 100).toFixed(2)}
                     </td>
                     <td className="px-4 py-4 align-middle text-sm text-text-secondary whitespace-nowrap text-right w-24">
-                      <span className="capitalize px-2 py-1 bg-bg-base border border-border-default rounded text-xs">{expense.split_type}</span>
+                      {(() => {
+                        const st = expense.split_type?.toLowerCase() || '';
+                        let colors = 'bg-bg-base border-border-default text-text-secondary';
+                        if (st === 'equal') colors = 'bg-green-600 text-text-inverse';
+                        else if (st === 'share') colors = 'bg-blue-600 text-text-inverse';
+                        else if (st === 'percentage') colors = 'bg-yellow-600 text-text-inverse';
+                        else if (st === 'unequal') colors = 'bg-red-600 text-text-inverse';
+                        
+                        return (
+                          <span className={`capitalize inline-block w-24 text-center px-2 py-1 rounded text-sm font-medium ${colors}`}>
+                            {expense.split_type}
+                          </span>
+                        );
+                      })()}
                     </td>
                   </tr>
                 ))

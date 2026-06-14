@@ -61,7 +61,7 @@ async function processAndInsertBatch(batchId) {
   for (const name of uniqueNames) {
     if (!userMap.has(name)) {
       const properName = name.charAt(0).toUpperCase() + name.slice(1);
-      const email = `${name.replace(/\s+/g, '')}@splito.app`; // Dummy email
+      const email = `${name.replace(/\s+/g, '')}_${Date.now()}@splito.app`; // Dummy email
       
       // We cannot easily create Auth users via Supabase service role without the Admin API,
       // but if we are just inserting into our public.users table, we might bypass auth.

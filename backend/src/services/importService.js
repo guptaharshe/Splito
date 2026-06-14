@@ -19,6 +19,7 @@ async function parseCSV(filePath) {
         const d_amount = data.amount || data.Amount || '';
         const d_curr = data.currency || data.Currency || '';
         const d_splitType = data.split_type || data['Split Type'] || '';
+        const d_splitWith = data.split_with || data['Split With'] || '';
         const d_splitDetails = data.split_details || data['Split Details'] || '';
         const d_notes = data.notes || data.Notes || '';
 
@@ -32,12 +33,13 @@ async function parseCSV(filePath) {
           rowNumber,
           original: data,
           // Normalize immediately
-          date: d_date.trim(),
+          date: normalizeDate(d_date.trim()),
           description: d_desc.trim(),
           paidBy: d_paidBy.trim(),
           amount: d_amount.trim(),
           currency: d_curr.trim(),
           splitType: d_splitType.trim(),
+          splitWith: d_splitWith.trim(),
           splitDetails: d_splitDetails.trim(),
           notes: d_notes.trim()
         });

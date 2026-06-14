@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchApi } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 import { FiArrowLeft, FiArrowRight } from 'react-icons/fi';
 
 export default function GroupDetail() {
   const { id } = useParams();
+  const { isAdmin, user } = useAuth();
   const [group, setGroup] = useState(null);
   const [members, setMembers] = useState([]);
   const [balances, setBalances] = useState([]);
@@ -130,12 +132,14 @@ export default function GroupDetail() {
           {/* Balances Column */}
           <div className="bg-bg-surface border border-border-subtle rounded p-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-text-primary">Balances</h2>
+              <h2 className="text-lg font-semibold text-text-primary">
+                {isAdmin ? 'All Balances' : 'My Balances'}
+              </h2>
             </div>
             <div className="border-b border-border-subtle mb-3 mt-2"></div>
             
             <ul className="flex flex-col gap-3 mb-6">
-              {balances.map(b => {
+              {(isAdmin ? balances : balances.filter(b => b.user_id === user?.id)).map(b => {
                 const amount = b.net_balance_paise / 100;
                 let statusClass = 'text-text-primary';
                 let statusText = '[even]';
@@ -154,9 +158,9 @@ export default function GroupDetail() {
                 return (
                   <li key={b.user_id} className="flex justify-between items-center text-sm">
                     <span>{b.name}</span>
-                    <div className={`flex gap-2 w-[120px] justify-between ${statusClass}`}>
+                    <div className={`flex items-center gap-3 whitespace-nowrap justify-end ${statusClass}`}>
                       <span>{formattedAmount}</span>
-                      <span className="text-text-tertiary">{statusText}</span>
+                      <span className="text-text-secondary">{statusText}</span>
                     </div>
                   </li>
                 );
@@ -164,20 +168,17 @@ export default function GroupDetail() {
               {balances.length === 0 && <li className="text-sm text-text-secondary">No balances yet.</li>}
             </ul>
 
-            {pairwise.length > 0 && (
+            {(isAdmin ? pairwise : pairwise.filter(p => p.from_user_id === user?.id || p.to_user_id === user?.id)).length > 0 && (
               <>
                 <h3 className="text-sm font-medium mb-3 mt-8">Suggested Settlements:</h3>
                 <ul className="flex flex-col gap-2">
-                  {pairwise.map((p, idx) => (
+                  {(isAdmin ? pairwise : pairwise.filter(p => p.from_user_id === user?.id || p.to_user_id === user?.id)).map((p, idx) => (
                     <li key={idx} className="flex justify-between items-center text-sm text-text-secondary">
                       <span>{p.from_user_name} &rarr; {p.to_user_name}</span>
                       <span className="text-text-primary">₹{(p.amount_paise / 100).toFixed(2)}</span>
                     </li>
                   ))}
                 </ul>
-                <Link to={`/groups/${id}/settlements`} className="text-accent text-sm mt-4 inline-block hover:underline font-medium">
-                  View and Record Settlements &rarr;
-                </Link>
               </>
             )}
           </div>

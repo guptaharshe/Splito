@@ -58,57 +58,52 @@ router.get('/groups/:id/balances', async (req, res) => {
   }
 });
 
-// GET /api/balances/net - get overall net balance for current user
+// GET /api/balances/net - get overall net balance and analytics for current user
 router.get('/balances/net', async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // 1. Total expenses paid by me
-    const { data: paidExpenses, error: err1 } = await supabase
-      .from('expenses')
-      .select('amount_paise')
-      .eq('paid_by', userId)
-      .is('deleted_at', null);
-      
-    if (err1) throw err1;
+    // 1. Fetch all groups the user is a member of
+    const { data: members, error: memErr } = await supabase
+      .from('group_members')
+      .select('group_id')
+      .eq('user_id', userId)
+      .is('left_at', null);
 
-    // 2. My share of all expenses
-    const { data: mySplits, error: err2 } = await supabase
+    if (memErr) throw memErr;
+
+    let totalOwedToYou = 0;
+    let totalYouOwe = 0;
+    
+    // 2. Compute balances per group to get exact owed/owes
+    for (const member of members || []) {
+      const { balances } = await computeGroupBalances(member.group_id);
+      const myBalance = balances[userId] || 0;
+      if (myBalance > 0) {
+        totalOwedToYou += myBalance;
+      } else if (myBalance < 0) {
+        totalYouOwe += Math.abs(myBalance);
+      }
+    }
+
+    const netBalancePaise = totalOwedToYou - totalYouOwe;
+
+    // 3. Count total expenses the user is involved in
+    const { count: expensesCount, error: expErr } = await supabase
       .from('expense_splits')
-      .select('amount_paise, expenses!inner(deleted_at)')
+      .select('expense_id, expenses!inner(deleted_at)', { count: 'exact', head: true })
       .eq('user_id', userId)
       .is('expenses.deleted_at', null);
 
-    if (err2) throw err2;
+    if (expErr) throw expErr;
 
-    // 3. Settlements paid by me
-    const { data: paidSettlements, error: err3 } = await supabase
-      .from('settlements')
-      .select('amount_paise')
-      .eq('paid_by', userId)
-      .is('deleted_at', null);
-
-    if (err3) throw err3;
-
-    // 4. Settlements paid to me
-    const { data: receivedSettlements, error: err4 } = await supabase
-      .from('settlements')
-      .select('amount_paise')
-      .eq('paid_to', userId)
-      .is('deleted_at', null);
-
-    if (err4) throw err4;
-
-    // Calculate sums
-    const sumPaidExpenses = paidExpenses.reduce((acc, curr) => acc + parseInt(curr.amount_paise, 10), 0);
-    const sumMySplits = mySplits.reduce((acc, curr) => acc + parseInt(curr.amount_paise, 10), 0);
-    const sumPaidSettlements = paidSettlements.reduce((acc, curr) => acc + parseInt(curr.amount_paise, 10), 0);
-    const sumReceivedSettlements = receivedSettlements.reduce((acc, curr) => acc + parseInt(curr.amount_paise, 10), 0);
-
-    // Final Net Balance Formula
-    const netBalancePaise = (sumPaidExpenses - sumMySplits) + (sumPaidSettlements - sumReceivedSettlements);
-
-    res.json({ netBalancePaise });
+    res.json({ 
+      netBalancePaise,
+      totalOwedToYou,
+      totalYouOwe,
+      totalGroups: (members || []).length,
+      totalExpenses: expensesCount || 0
+    });
   } catch (err) {
     console.error('Fetch net balance error:', err);
     res.status(500).json({ error: 'Failed to calculate net balance' });

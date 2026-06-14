@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { fetchApi } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { FiArrowRight, FiPlus, FiUsers, FiCalendar } from 'react-icons/fi';
 
 export default function GroupsList() {
   const { isAdmin } = useAuth();
+  const navigate = useNavigate();
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,7 +53,7 @@ export default function GroupsList() {
           <table className="w-full text-left border-collapse">
             <tbody className="divide-y divide-border-subtle">
               {groups.map(g => (
-                <tr key={g.id} className="transition-colors group hover:cursor-pointer" onClick={() => window.location.href = `/groups/${g.id}`}>
+                <tr key={g.id} className="transition-colors group hover:cursor-pointer" onClick={() => navigate(`/groups/${g.id}`)}>
                   <td className="px-4 py-3 align-middle">
                     <span className="font-semibold text-text-primary text-base group-hover:underline">{g.name}</span>
                   </td>
