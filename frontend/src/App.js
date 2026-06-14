@@ -6,6 +6,9 @@ import GroupDetail from './pages/GroupDetail';
 import Expenses from './pages/Expenses';
 import AddExpense from './pages/AddExpense';
 import Settlements from './pages/Settlements';
+import Import from './pages/Import';
+import ImportReview from './pages/ImportReview';
+import ImportReport from './pages/ImportReport';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -17,6 +20,24 @@ function App() {
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/import" element={
+          <ProtectedRoute>
+            <Import />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/import/:batch_id/review" element={
+          <ProtectedRoute>
+            <ImportReview />
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/import/:batch_id/report" element={
+          <ProtectedRoute>
+            <ImportReport />
           </ProtectedRoute>
         } />
 

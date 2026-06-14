@@ -37,6 +37,15 @@ export default function Dashboard() {
       </div>
 
       <div className="max-w-[1100px] mx-auto">
+        <div className="bg-bg-surface border border-border-subtle rounded-base p-6 mb-6">
+          <h2 className="text-md font-semibold mb-4">Quick Actions</h2>
+          <div className="flex gap-3">
+            <Link to="/import" className="px-4 py-2 bg-text-primary text-bg-base rounded-base text-sm font-medium hover:opacity-90">
+              Import CSV
+            </Link>
+          </div>
+        </div>
+
         <div className="bg-bg-surface border border-border-subtle rounded-base p-6">
           <h2 className="text-md font-semibold mb-4">Your Groups</h2>
           <div className="flex flex-col gap-4">
