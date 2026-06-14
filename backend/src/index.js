@@ -23,9 +23,11 @@ app.get('/api/health', (req, res) => {
 // Routes
 const authRoutes = require('./routes/auth');
 const groupsRoutes = require('./routes/groups');
+const expensesRoutes = require('./routes/expenses');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/groups', groupsRoutes);
+app.use('/api', expensesRoutes); // Expenses are both group-scoped (/api/groups/:id/expenses) and global (/api/expenses/:id)
 
 // Start server
 app.listen(PORT, () => {
