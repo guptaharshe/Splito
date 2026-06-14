@@ -1,23 +1,32 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchApi } from '../lib/api';
-import { FiArrowRight, FiPlus, FiDollarSign, FiActivity, FiUsers } from 'react-icons/fi';
+import { FiArrowRight, FiPlus, FiDollarSign, FiActivity, FiUsers, FiDatabase, FiUploadCloud, FiBarChart2 } from 'react-icons/fi';
 
 export default function Dashboard() {
   const [groups, setGroups] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [netBalance, setNetBalance] = useState(0);
+  const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
     async function loadDashboardData() {
       try {
-        const [groupsData, userData] = await Promise.all([
-          fetchApi('/api/groups'),
-          fetchApi('/api/auth/me')
-        ]);
-        setGroups(groupsData.groups || []);
-        if (userData.user && userData.user.role === 'admin') {
-          setIsAdmin(true);
+        const userData = await fetchApi('/api/auth/me');
+        const adminStatus = userData.user && userData.user.role === 'admin';
+        setIsAdmin(adminStatus);
+
+        if (adminStatus) {
+          const stats = await fetchApi('/api/admin/analytics');
+          setAnalytics(stats);
+        } else {
+          const [groupsData, balanceData] = await Promise.all([
+            fetchApi('/api/groups'),
+            fetchApi('/api/balances/net')
+          ]);
+          setGroups(groupsData.groups || []);
+          setNetBalance(balanceData.netBalancePaise || 0);
         }
       } catch (err) {
         console.error('Failed to load dashboard data:', err);
@@ -29,40 +38,100 @@ export default function Dashboard() {
   }, []);
 
   if (loading) {
-    return <div className="p-8 text-text-secondary">Loading dashboard...</div>;
+    return (
+      <div className="px-8 py-2 max-w-7xl mx-auto flex flex-col gap-8 animate-pulse mt-4">
+        <div className="w-48 h-8 bg-border-default/40 rounded"></div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="h-32 bg-border-default/30 rounded"></div>
+          <div className="h-32 bg-border-default/30 rounded"></div>
+          <div className="h-32 bg-border-default/30 rounded"></div>
+        </div>
+        <div className="h-48 bg-border-default/30 rounded mt-4"></div>
+      </div>
+    );
   }
 
-  return (
-    <div className="p-8 max-w-[1100px] mx-auto flex flex-col gap-8 animate-fade-in">
-      
-      {/* Admin Panel */}
-      {isAdmin && (
-        <section className="bg-bg-surface border border-border-subtle rounded-md p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-md font-semibold text-text-primary flex items-center gap-2">
-              Admin Panel
-              <span className="text-[10px] bg-accent text-text-inverse px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">Admin</span>
+  // --- ADMIN VIEW ---
+  if (isAdmin) {
+    return (
+      <div className="px-8 py-2 max-w-7xl mx-auto flex flex-col gap-8 animate-fade-in">
+        <div>
+          <h1 className="text-2xl font-bold text-text-primary tracking-tight mb-1">System Analytics</h1>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-bg-surface border border-border-subtle rounded p-4 flex flex-col items-center justify-center">
+            <FiUsers className="text-2xl text-text-secondary mb-3" />
+            <p className="text-xs text-text-secondary font-medium uppercase mb-1">Total Users</p>
+            <h2 className="text-3xl font-bold text-text-primary">{analytics?.totalUsers || 0}</h2>
+          </div>
+          <div className="bg-bg-surface border border-border-subtle rounded p-4 flex flex-col items-center justify-center">
+            <FiDatabase className="text-2xl text-text-secondary mb-3" />
+            <p className="text-xs text-text-secondary font-medium uppercase mb-1">Active Groups</p>
+            <h2 className="text-3xl font-bold text-text-primary">{analytics?.totalGroups || 0}</h2>
+          </div>
+          <div className="bg-bg-surface border border-border-subtle rounded p-4 flex flex-col items-center justify-center">
+            <FiBarChart2 className="text-2xl text-text-secondary mb-3" />
+            <p className="text-xs text-text-secondary font-medium uppercase mb-1">Total Volume Processed</p>
+            <h2 className="text-3xl font-bold text-text-primary">
+              ₹{((analytics?.totalVolumePaise || 0) / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
             </h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Link to="/import" className="flex flex-col p-4 rounded bg-bg-base hover:bg-bg-elevated border border-border-default transition-colors group">
-              <span className="font-medium text-text-primary mb-1">Import CSV</span>
-              <span className="text-xs text-text-secondary">Upload historical expenses data</span>
-              <FiArrowRight className="mt-4 text-text-tertiary group-hover:text-text-primary transition-colors" />
-            </Link>
-            <div className="flex flex-col p-4 rounded bg-bg-base border border-border-default opacity-60 cursor-not-allowed">
-              <span className="font-medium text-text-primary mb-1">Manage Users</span>
-              <span className="text-xs text-text-secondary">Coming soon</span>
+        </div>
+
+        <section className="bg-bg-surface border border-border-subtle rounded p-4 mt-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-text-primary flex items-center gap-2">
+              <FiUploadCloud className="text-text-secondary" /> Data Management Portal
+            </h2>
+          </div>
+          <div className="flex flex-col md:flex-row gap-6 items-center rounded px-3 py-2 bg-bg-base">
+            <div className="flex-1">
+              <h3 className="font-semibold text-text-primary mb-1">CSV Bulk Import</h3>
+              <p className="text-sm text-text-secondary mb-4">
+                Ingest historical expenses data from raw CSV exports. The system will automatically parse split logic and flag anomalies.
+              </p>
+              <Link to="/import" className="inline-flex items-center gap-2 bg-text-primary text-bg-base font-medium py-2.5 px-6 rounded text-sm">
+                Go to Import Engine <FiArrowRight />
+              </Link>
+            </div>
+            <div className="text-center p-4 border-l border-border-subtle pl-8">
+              <p className="text-3xl font-bold text-text-primary mb-1">{analytics?.totalImports || 0}</p>
+              <p className="text-sm text-text-secondary">Past Imports</p>
             </div>
           </div>
         </section>
-      )}
+      </div>
+    );
+  }
 
+  // --- NORMAL USER VIEW ---
+  return (
+    <div className="p-8 max-w-[1100px] mx-auto flex flex-col gap-8 animate-fade-in">
+      
       {/* Hero Balance Card */}
       <section className="bg-bg-surface border border-border-subtle rounded-md p-8 shadow-sm flex flex-col items-center justify-center text-center">
         <p className="text-sm text-text-secondary font-medium mb-2 uppercase tracking-wide">Overall Net Balance</p>
-        <h1 className="text-4xl sm:text-5xl font-bold text-success tracking-tight mb-2">+₹1,250</h1>
-        <p className="text-sm text-text-tertiary">You are owed money across all your groups.</p>
+        {netBalance > 0 ? (
+          <>
+            <h1 className="text-4xl sm:text-5xl font-bold text-success tracking-tight mb-2">
+              +₹{(netBalance / 100).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+            </h1>
+            <p className="text-sm text-text-tertiary">You are owed money across all your groups.</p>
+          </>
+        ) : netBalance < 0 ? (
+          <>
+            <h1 className="text-4xl sm:text-5xl font-bold text-error tracking-tight mb-2">
+              -₹{(Math.abs(netBalance) / 100).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+            </h1>
+            <p className="text-sm text-text-tertiary">You owe money across all your groups.</p>
+          </>
+        ) : (
+          <>
+            <h1 className="text-4xl sm:text-5xl font-bold text-text-secondary tracking-tight mb-2">₹0</h1>
+            <p className="text-sm text-text-tertiary">You are completely settled up.</p>
+          </>
+        )}
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

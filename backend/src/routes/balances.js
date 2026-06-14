@@ -58,4 +58,61 @@ router.get('/groups/:id/balances', async (req, res) => {
   }
 });
 
+// GET /api/balances/net - get overall net balance for current user
+router.get('/balances/net', async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // 1. Total expenses paid by me
+    const { data: paidExpenses, error: err1 } = await supabase
+      .from('expenses')
+      .select('amount_paise')
+      .eq('paid_by', userId)
+      .is('deleted_at', null);
+      
+    if (err1) throw err1;
+
+    // 2. My share of all expenses
+    const { data: mySplits, error: err2 } = await supabase
+      .from('expense_splits')
+      .select('amount_paise, expenses!inner(deleted_at)')
+      .eq('user_id', userId)
+      .is('expenses.deleted_at', null);
+
+    if (err2) throw err2;
+
+    // 3. Settlements paid by me
+    const { data: paidSettlements, error: err3 } = await supabase
+      .from('settlements')
+      .select('amount_paise')
+      .eq('paid_by', userId)
+      .is('deleted_at', null);
+
+    if (err3) throw err3;
+
+    // 4. Settlements paid to me
+    const { data: receivedSettlements, error: err4 } = await supabase
+      .from('settlements')
+      .select('amount_paise')
+      .eq('paid_to', userId)
+      .is('deleted_at', null);
+
+    if (err4) throw err4;
+
+    // Calculate sums
+    const sumPaidExpenses = paidExpenses.reduce((acc, curr) => acc + parseInt(curr.amount_paise, 10), 0);
+    const sumMySplits = mySplits.reduce((acc, curr) => acc + parseInt(curr.amount_paise, 10), 0);
+    const sumPaidSettlements = paidSettlements.reduce((acc, curr) => acc + parseInt(curr.amount_paise, 10), 0);
+    const sumReceivedSettlements = receivedSettlements.reduce((acc, curr) => acc + parseInt(curr.amount_paise, 10), 0);
+
+    // Final Net Balance Formula
+    const netBalancePaise = (sumPaidExpenses - sumMySplits) + (sumPaidSettlements - sumReceivedSettlements);
+
+    res.json({ netBalancePaise });
+  } catch (err) {
+    console.error('Fetch net balance error:', err);
+    res.status(500).json({ error: 'Failed to calculate net balance' });
+  }
+});
+
 module.exports = router;
