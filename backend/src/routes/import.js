@@ -55,11 +55,14 @@ router.post('/import', upload.single('file'), async (req, res) => {
     const { cleanRows, anomalies } = detectAnomalies(rows, usersWithTimeline);
 
     // 4. Create import batch
+    const diskFileName = req.file.filename;
+    const originalFileName = req.file.originalname;
+    
     const { data: batch, error: batchError } = await supabase
       .from('import_batches')
       .insert({
         imported_by: req.user.id,
-        filename: req.file.filename,
+        filename: `${diskFileName}|${originalFileName}`,
         total_rows: rows.length,
         clean_rows: cleanRows.length,
         anomaly_rows: anomalies.length,
@@ -96,6 +99,22 @@ router.post('/import', upload.single('file'), async (req, res) => {
   }
 });
 
+// GET /api/import/history -> fetch all import batches
+router.get('/import/history', async (req, res) => {
+  try {
+    const { data: batches, error } = await supabase
+      .from('import_batches')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json({ batches });
+  } catch (err) {
+    console.error('Fetch import history error:', err);
+    res.status(500).json({ error: 'Failed to fetch history' });
+  }
+});
+
 // GET /api/import/:batch_id -> get batch and its anomalies
 router.get('/import/:batch_id', async (req, res) => {
   const batchId = req.params.batch_id;
@@ -117,7 +136,14 @@ router.get('/import/:batch_id', async (req, res) => {
 
     if (anomaliesError) throw anomaliesError;
 
-    res.json({ batch, anomalies });
+    const INFO_TYPES = ['Zero Amount', 'Comma in amount', 'Negative amount', 'Trailing space', 'Name case', 'Missing currency', 'USD currency', 'Malformed date', 'Conflicting split_type'];
+    
+    const anomaliesWithSeverity = anomalies.map(a => ({
+      ...a,
+      severity: INFO_TYPES.includes(a.anomaly_type) ? 'INFO' : 'BLOCKING'
+    }));
+
+    res.json({ batch, anomalies: anomaliesWithSeverity });
   } catch (err) {
     console.error('Fetch batch error:', err);
     res.status(500).json({ error: 'Failed to fetch batch' });
@@ -129,7 +155,7 @@ router.put('/import/:batch_id/anomalies/:id', async (req, res) => {
   const { id } = req.params;
   const { resolution } = req.body; // 'approved' or 'rejected'
 
-  if (!['approved', 'rejected'].includes(resolution)) {
+  if (!['approved', 'rejected', 'pending'].includes(resolution)) {
     return res.status(400).json({ error: 'Invalid resolution status' });
   }
 
@@ -170,17 +196,22 @@ router.post('/import/:batch_id/finalize', async (req, res) => {
 
     if (anomaliesError) throw anomaliesError;
 
-    const pending = anomalies.filter(a => a.resolution === 'pending');
+    const INFO_TYPES = ['Zero Amount', 'Comma in amount', 'Negative amount', 'Trailing space', 'Name case', 'Missing currency', 'USD currency', 'Malformed date', 'Conflicting split_type'];
+    
+    const pending = anomalies.filter(a => a.resolution === 'pending' && !INFO_TYPES.includes(a.anomaly_type));
     if (pending.length > 0) {
       return res.status(400).json({ error: 'Cannot finalize until all anomalies are resolved' });
     }
 
-    // 2. Mark batch as finalized
+    // 2. Process and insert the valid rows using our new full ingestion pipeline
+    const { processAndInsertBatch } = require('../services/fullImportService');
+    await processAndInsertBatch(batchId);
+    
+    // Re-fetch the batch since it was updated in the service
     const { data: batch, error: batchError } = await supabase
       .from('import_batches')
-      .update({ status: 'finalized', finalized_at: new Date().toISOString() })
+      .select('*')
       .eq('id', batchId)
-      .select()
       .single();
 
     if (batchError) throw batchError;
@@ -196,5 +227,6 @@ router.post('/import/:batch_id/finalize', async (req, res) => {
     res.status(500).json({ error: 'Failed to finalize import' });
   }
 });
+
 
 module.exports = router;

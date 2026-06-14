@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FiHome, FiUsers, FiUploadCloud, FiLogOut, FiSlack } from 'react-icons/fi';
+import { FiHome, FiUsers, FiUploadCloud, FiLogOut, FiSlack, FiClock } from 'react-icons/fi';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
@@ -17,7 +17,10 @@ export default function Layout({ children }) {
   const navLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: FiHome },
     { name: 'Groups', path: '/groups', icon: FiUsers },
-    ...(isAdmin ? [{ name: 'Import Data', path: '/import', icon: FiUploadCloud }] : []),
+    ...(isAdmin ? [
+      { name: 'Import Data', path: '/import', icon: FiUploadCloud },
+      { name: 'History', path: '/history', icon: FiClock }
+    ] : []),
   ];
 
   return (

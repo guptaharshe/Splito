@@ -11,6 +11,7 @@ import Import from './pages/Import';
 import ImportReview from './pages/ImportReview';
 import ImportReport from './pages/ImportReport';
 import GroupsList from './pages/GroupsList';
+import History from './pages/History';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -37,6 +38,12 @@ function App() {
               <Import />
             </ProtectedRoute>
           } />
+
+          <Route path="/history" element={
+            <ProtectedRoute>
+              <History />
+            </ProtectedRoute>
+          } />
           
           <Route path="/import/:batch_id/review" element={
             <ProtectedRoute>
@@ -45,6 +52,12 @@ function App() {
           } />
           
           <Route path="/import/:batch_id/report" element={
+            <ProtectedRoute>
+              <ImportReport />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/history/:batch_id/report" element={
             <ProtectedRoute>
               <ImportReport />
             </ProtectedRoute>

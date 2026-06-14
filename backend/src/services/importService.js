@@ -13,19 +13,33 @@ async function parseCSV(filePath) {
     fs.createReadStream(filePath)
       .pipe(csv())
       .on('data', (data) => {
+        const d_date = data.date || data.Date || '';
+        const d_desc = data.description || data.Description || '';
+        const d_paidBy = data.paid_by || data['Paid By'] || '';
+        const d_amount = data.amount || data.Amount || '';
+        const d_curr = data.currency || data.Currency || '';
+        const d_splitType = data.split_type || data['Split Type'] || '';
+        const d_splitDetails = data.split_details || data['Split Details'] || '';
+        const d_notes = data.notes || data.Notes || '';
+
+        // Skip completely empty rows
+        if (!d_date && !d_desc && !d_amount && !d_paidBy) {
+          return;
+        }
+        
         rowNumber++;
         results.push({
           rowNumber,
           original: data,
           // Normalize immediately
-          date: data.Date ? data.Date.trim() : '',
-          description: data.Description ? data.Description.trim() : '',
-          paidBy: data['Paid By'] ? data['Paid By'].trim() : '',
-          amount: data.Amount ? data.Amount.trim() : '',
-          currency: data.Currency ? data.Currency.trim() : '',
-          splitType: data['Split Type'] ? data['Split Type'].trim() : '',
-          splitDetails: data['Split Details'] ? data['Split Details'].trim() : '',
-          notes: data.Notes ? data.Notes.trim() : ''
+          date: d_date.trim(),
+          description: d_desc.trim(),
+          paidBy: d_paidBy.trim(),
+          amount: d_amount.trim(),
+          currency: d_curr.trim(),
+          splitType: d_splitType.trim(),
+          splitDetails: d_splitDetails.trim(),
+          notes: d_notes.trim()
         });
       })
       .on('end', () => {
