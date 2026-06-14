@@ -1,6 +1,10 @@
 import { supabase } from './supabase';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+let API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+// Bulletproof: Force relative API path in production even if .env wrongly contains localhost
+if (process.env.NODE_ENV === 'production') {
+  API_URL = '/api';
+}
 
 export async function fetchApi(endpoint, options = {}) {
   const { data: { session } } = await supabase.auth.getSession();
