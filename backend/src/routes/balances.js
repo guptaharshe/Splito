@@ -18,7 +18,7 @@ router.get('/groups/:id/balances', async (req, res) => {
     // Fetch user details for richer payload
     const userIds = Object.keys(balances);
     if (userIds.length === 0) {
-      return res.json({ balances: {}, pairwise: [] });
+      return res.json({ balances: [], pairwise: [] });
     }
 
     const { data: users, error } = await supabase
