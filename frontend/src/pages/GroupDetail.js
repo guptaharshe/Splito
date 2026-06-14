@@ -129,7 +129,7 @@ export default function GroupDetail() {
             </ul>
           </div>
 
-          {/* Balances Column */}
+          {/* Right Column: Balances */}
           <div className="bg-bg-surface border border-border-subtle rounded p-4">
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-semibold text-text-primary">
@@ -168,21 +168,29 @@ export default function GroupDetail() {
               {balances.length === 0 && <li className="text-sm text-text-secondary">No balances yet.</li>}
             </ul>
 
-            {(isAdmin ? pairwise : pairwise.filter(p => p.from_user_id === user?.id || p.to_user_id === user?.id)).length > 0 && (
-              <>
-                <h3 className="text-sm font-medium mb-3 mt-8">Suggested Settlements:</h3>
-                <ul className="flex flex-col gap-2">
-                  {(isAdmin ? pairwise : pairwise.filter(p => p.from_user_id === user?.id || p.to_user_id === user?.id)).map((p, idx) => (
-                    <li key={idx} className="flex justify-between items-center text-sm text-text-secondary">
-                      <span>{p.from_user_name} &rarr; {p.to_user_name}</span>
-                      <span className="text-text-primary">₹{(p.amount_paise / 100).toFixed(2)}</span>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </div>
+            </div>
         </div>
+
+        {/* Suggested Settlements - Full Width Below Grid */}
+        {(isAdmin ? pairwise : pairwise.filter(p => p.from_user_id === user?.id || p.to_user_id === user?.id)).length > 0 && (
+          <div className="mt-6 bg-bg-surface border border-border-subtle rounded p-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-text-primary">
+                {isAdmin ? 'All Suggested Settlements' : 'My Suggested Settlements'}
+              </h2>
+            </div>
+            <div className="border-b border-border-subtle mb-3 mt-2"></div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
+              {(isAdmin ? pairwise : pairwise.filter(p => p.from_user_id === user?.id || p.to_user_id === user?.id)).map((p, idx) => (
+                <div key={idx} className="flex justify-between items-center text-sm text-text-secondary">
+                  <span>{p.from_user_name} &rarr; {p.to_user_name}</span>
+                  <span className="text-text-primary font-medium">₹{(p.amount_paise / 100).toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
