@@ -13,7 +13,29 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Deploy to Server via SSH
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Build Frontend
+        working-directory: ./frontend
+        run: |
+          npm install
+          npm run build
+        env:
+          CI: false
+
+      - name: Copy build to Droplet
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          source: "frontend/build"
+          target: "/var/www/Splito"
+
+      - name: Update Backend via SSH
         uses: appleboy/ssh-action@v0.1.10
         with:
           host: ${{ secrets.DROPLET_IP }}
@@ -27,8 +49,3 @@ jobs:
             cd backend
             npm install
             pm2 restart splito-backend
-            
-            # Update Frontend
-            cd ../frontend
-            npm install
-            npm run build
