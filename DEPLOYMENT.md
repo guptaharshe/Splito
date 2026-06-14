@@ -124,10 +124,12 @@ Add the following three secrets:
 
 ### 2. How the Pipeline Works
 Once the secrets are added, any time you run `git push origin main`, GitHub Actions will automatically:
-1. Build the React frontend production bundle inside the high-memory GitHub runner.
-2. Securely copy (SCP) the built `frontend/build` folder to your droplet.
-3. SSH into your droplet, pull the latest code, install backend dependencies, and restart PM2.
-4. Your live site updates instantly without crashing the droplet's memory!
+1. Connect securely to your droplet.
+2. Ensure a 2GB Swap file exists (to prevent Out of Memory crashes when building React).
+3. Pull the latest code changes.
+4. Install backend dependencies and restart PM2.
+5. Install frontend dependencies and rebuild the React production bundle right on the server (which automatically loads your local `.env` variables).
+6. Your live site updates instantly!
 
 ---
 
