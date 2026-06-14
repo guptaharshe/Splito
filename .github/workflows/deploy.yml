@@ -20,6 +20,8 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
+            set -e
+
             # Add 2GB Swap Space to prevent Out of Memory (OOM) crashes during React build
             if [ ! -f /swapfile ]; then
               sudo fallocate -l 2G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
@@ -29,16 +31,15 @@ jobs:
             fi
 
             cd /var/www/Splito
-            git pull origin main
+            git pull --ff-only origin main
             
             # Update Backend
             cd backend
-            npm install
-            pm2 restart splito-backend
+            npm ci
+            pm2 restart splito-backend --update-env
             
             # Update Frontend (will use the local .env file)
             cd ../frontend
-            rm -rf node_modules package-lock.json
-            npm cache clean --force
-            npm install
+            rm -rf node_modules
+            npm ci
             NODE_OPTIONS=--max_old_space_size=2048 npm run build
