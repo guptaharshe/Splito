@@ -129,68 +129,114 @@ export default function GroupDetail() {
             </ul>
           </div>
 
-          {/* Right Column: Balances */}
-          <div className="bg-bg-surface border border-border-subtle rounded p-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-text-primary">
-                {isAdmin ? 'All Balances' : 'My Balances'}
-              </h2>
-            </div>
-            <div className="border-b border-border-subtle mb-3 mt-2"></div>
-            
-            <ul className="flex flex-col gap-3 mb-6">
-              {(isAdmin ? balances : balances.filter(b => b.user_id === user?.id)).map(b => {
-                const amount = b.net_balance_paise / 100;
-                let statusClass = 'text-text-primary';
-                let statusText = '[even]';
-                let formattedAmount = `₹0.00`;
+          {/* Right Column */}
+          <div className="flex flex-col gap-6">
+            {isAdmin ? (
+              <>
+                {/* Admin View: Separate Cards */}
+                <div className="bg-bg-surface border border-border-subtle rounded p-4">
+                  <h2 className="text-lg font-semibold text-text-primary mb-2">All Balances</h2>
+                  <div className="border-b border-border-subtle mb-3"></div>
+                  <ul className="flex flex-col gap-3">
+                    {balances.map(b => {
+                      const amount = b.net_balance_paise / 100;
+                      let statusClass = 'text-text-primary';
+                      let statusText = '[even]';
+                      let formattedAmount = `₹0.00`;
 
-                if (amount > 0) {
-                  statusClass = 'text-success';
-                  statusText = '[owed]';
-                  formattedAmount = `+₹${amount.toFixed(2)}`;
-                } else if (amount < 0) {
-                  statusClass = 'text-error';
-                  statusText = '[owes]';
-                  formattedAmount = `-₹${Math.abs(amount).toFixed(2)}`;
-                }
+                      if (amount > 0) {
+                        statusClass = 'text-success';
+                        statusText = '[owed]';
+                        formattedAmount = `+₹${amount.toFixed(2)}`;
+                      } else if (amount < 0) {
+                        statusClass = 'text-error';
+                        statusText = '[owes]';
+                        formattedAmount = `-₹${Math.abs(amount).toFixed(2)}`;
+                      }
 
-                return (
-                  <li key={b.user_id} className="flex justify-between items-center text-sm">
-                    <span>{b.name}</span>
-                    <div className={`flex items-center gap-3 whitespace-nowrap justify-end ${statusClass}`}>
-                      <span>{formattedAmount}</span>
-                      <span className="text-text-secondary">{statusText}</span>
-                    </div>
-                  </li>
-                );
-              })}
-              {balances.length === 0 && <li className="text-sm text-text-secondary">No balances yet.</li>}
-            </ul>
-
-            </div>
-        </div>
-
-        {/* Suggested Settlements - Full Width Below Grid */}
-        {(isAdmin ? pairwise : pairwise.filter(p => p.from_user_id === user?.id || p.to_user_id === user?.id)).length > 0 && (
-          <div className="mt-6 bg-bg-surface border border-border-subtle rounded p-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-text-primary">
-                {isAdmin ? 'All Suggested Settlements' : 'My Suggested Settlements'}
-              </h2>
-            </div>
-            <div className="border-b border-border-subtle mb-3 mt-2"></div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-              {(isAdmin ? pairwise : pairwise.filter(p => p.from_user_id === user?.id || p.to_user_id === user?.id)).map((p, idx) => (
-                <div key={idx} className="flex justify-between items-center text-sm text-text-secondary">
-                  <span>{p.from_user_name} &rarr; {p.to_user_name}</span>
-                  <span className="text-text-primary font-medium">₹{(p.amount_paise / 100).toFixed(2)}</span>
+                      return (
+                        <li key={b.user_id} className="flex justify-between items-center text-sm">
+                          <span>{b.name}</span>
+                          <div className={`flex items-center gap-3 whitespace-nowrap justify-end ${statusClass}`}>
+                            <span>{formattedAmount}</span>
+                            <span className="text-text-secondary">{statusText}</span>
+                          </div>
+                        </li>
+                      );
+                    })}
+                    {balances.length === 0 && <li className="text-sm text-text-secondary">No balances yet.</li>}
+                  </ul>
                 </div>
-              ))}
-            </div>
+
+                {pairwise.length > 0 && (
+                  <div className="bg-bg-surface border border-border-subtle rounded p-4">
+                    <h2 className="text-lg font-semibold text-text-primary mb-2">All Suggested Settlements</h2>
+                    <div className="border-b border-border-subtle mb-3"></div>
+                    <div className="flex flex-col gap-2">
+                      {pairwise.map((p, idx) => (
+                        <div key={idx} className="flex justify-between items-center text-sm text-text-secondary">
+                          <span>{p.from_user_name} &rarr; {p.to_user_name}</span>
+                          <span className="text-text-primary font-medium">₹{(p.amount_paise / 100).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              /* Normal User View: Single Combined Card */
+              <div className="bg-bg-surface border border-border-subtle rounded p-4">
+                <h2 className="text-lg font-semibold text-text-primary mb-2">My Balances</h2>
+                <div className="border-b border-border-subtle mb-3"></div>
+                <ul className="flex flex-col gap-3 mb-6">
+                  {balances.filter(b => b.user_id === user?.id).map(b => {
+                    const amount = b.net_balance_paise / 100;
+                    let statusClass = 'text-text-primary';
+                    let statusText = '[even]';
+                    let formattedAmount = `₹0.00`;
+
+                    if (amount > 0) {
+                      statusClass = 'text-success';
+                      statusText = '[owed]';
+                      formattedAmount = `+₹${amount.toFixed(2)}`;
+                    } else if (amount < 0) {
+                      statusClass = 'text-error';
+                      statusText = '[owes]';
+                      formattedAmount = `-₹${Math.abs(amount).toFixed(2)}`;
+                    }
+
+                    return (
+                      <li key={b.user_id} className="flex justify-between items-center text-sm">
+                        <span>{b.name}</span>
+                        <div className={`flex items-center gap-3 whitespace-nowrap justify-end ${statusClass}`}>
+                          <span>{formattedAmount}</span>
+                          <span className="text-text-secondary">{statusText}</span>
+                        </div>
+                      </li>
+                    );
+                  })}
+                  {balances.filter(b => b.user_id === user?.id).length === 0 && (
+                    <li className="text-sm text-text-secondary">No balances yet.</li>
+                  )}
+                </ul>
+
+                {pairwise.filter(p => p.from_user_id === user?.id || p.to_user_id === user?.id).length > 0 && (
+                  <>
+                    <h2 className="text-lg font-semibold text-text-primary mb-2">My Suggested Settlements</h2>
+                    <div className="border-b border-border-subtle mb-3"></div>
+                    <div className="flex flex-col gap-2">
+                      {pairwise.filter(p => p.from_user_id === user?.id || p.to_user_id === user?.id).map((p, idx) => (
+                        <div key={idx} className="flex justify-between items-center text-sm text-text-secondary">
+                          <span>{p.from_user_name} &rarr; {p.to_user_name}</span>
+                          <span className="text-text-primary font-medium">₹{(p.amount_paise / 100).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
-        )}
       </div>
     </div>
   );
