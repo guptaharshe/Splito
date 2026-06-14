@@ -25,7 +25,6 @@ const authRoutes = require('./routes/auth');
 const groupsRoutes = require('./routes/groups');
 const expensesRoutes = require('./routes/expenses');
 const balancesRoutes = require('./routes/balances');
-const settlementsRoutes = require('./routes/settlements');
 const importRoutes = require('./routes/import');
 const adminRoutes = require('./routes/admin');
 
@@ -33,7 +32,6 @@ app.use('/api/auth', authRoutes);
 app.use('/api/groups', groupsRoutes);
 app.use('/api', expensesRoutes); // Expenses are both group-scoped (/api/groups/:id/expenses) and global (/api/expenses/:id)
 app.use('/api', balancesRoutes); // Balances are group-scoped (/api/groups/:id/balances)
-app.use('/api', settlementsRoutes); // Settlements are group-scoped and global
 app.use('/api', importRoutes); // Import logic
 app.use('/api/admin', adminRoutes); // Admin analytics
 

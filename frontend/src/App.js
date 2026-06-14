@@ -6,7 +6,6 @@ import Dashboard from './pages/Dashboard';
 import GroupDetail from './pages/GroupDetail';
 import Expenses from './pages/Expenses';
 import AddExpense from './pages/AddExpense';
-import Settlements from './pages/Settlements';
 import Import from './pages/Import';
 import ImportReview from './pages/ImportReview';
 import ImportReport from './pages/ImportReport';
@@ -81,12 +80,7 @@ function App() {
             </ProtectedRoute>
           } />
 
-          <Route path="/groups/:id/settlements" element={
-            <ProtectedRoute>
-              <Settlements />
-            </ProtectedRoute>
-          } />
-          
+
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </Router>
