@@ -24,7 +24,7 @@ This document records how AI was used during development and, just as importantl
 | AI implied all split types were fully exposed in the add-expense UI | `AddExpense.js` only enables the equal split form, while the other options are disabled | The docs now say the backend supports the split types, but the UI still exposes equal split first |
 | AI overstated timeline-aware balance handling | `balanceEngine.js` currently sums all expenses and settlements without filtering by `joined_at` / `left_at` | The scope and decisions docs now call this out as a deliberate tradeoff and a live-session discussion point |
 | AI described the import finalize flow as fully transactional | `fullImportService.js` is a best-effort ingestion path, not a single DB transaction | The docs were corrected to describe the review-first batch workflow honestly |
-| AI suggested the README was already complete for deployment | The repo docs did not mention the DigitalOcean host the assignment expects | README now includes the production URL `http://139.59.42.11` and the deployment model |
+| AI suggested the README was already complete for deployment | The repo docs did not mention the DigitalOcean host the assignment expects | README now includes the production URL `http://139.59.42.119` and the deployment model |
 | AI initially suspected the live 58-anomaly screenshot was the correct fresh import result | The finalized import report now shows 17 anomaly records, 26 clean rows imported, and 5 rejected rows | The docs were updated to match the finalized report and its row-by-row decisions |
 
 ## Final Import Summary
