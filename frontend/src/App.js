@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import GroupDetail from './pages/GroupDetail';
 import Expenses from './pages/Expenses';
 import AddExpense from './pages/AddExpense';
+import Settlements from './pages/Settlements';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -34,6 +35,12 @@ function App() {
         <Route path="/groups/:id/expenses/new" element={
           <ProtectedRoute>
             <AddExpense />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/groups/:id/settlements" element={
+          <ProtectedRoute>
+            <Settlements />
           </ProtectedRoute>
         } />
         

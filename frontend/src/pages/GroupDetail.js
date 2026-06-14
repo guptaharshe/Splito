@@ -150,6 +150,9 @@ export default function GroupDetail() {
                     </li>
                   ))}
                 </ul>
+                <Link to={`/groups/${id}/settlements`} className="text-accent text-sm mt-4 inline-block hover:underline font-medium">
+                  View and Record Settlements &rarr;
+                </Link>
               </>
             )}
           </div>
