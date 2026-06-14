@@ -83,6 +83,12 @@ export default function GroupDetail() {
               <FiArrowLeft size={16} /> Back to Groups
             </Link>
             <Link 
+              to={`/groups/${id}/settlements`}
+              className="bg-bg-surface border border-border-default hover:bg-bg-elevated text-text-primary px-4 py-2 text-sm font-medium rounded transition-colors flex items-center gap-2"
+            >
+              Settle Up
+            </Link>
+            <Link 
               to={`/groups/${id}/expenses`}
               className="bg-text-primary text-bg-base px-4 py-2 text-sm font-medium rounded transition-opacity flex items-center gap-2 group"
             >
