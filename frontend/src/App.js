@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import GroupDetail from './pages/GroupDetail';
+import Expenses from './pages/Expenses';
+import AddExpense from './pages/AddExpense';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -20,6 +22,18 @@ function App() {
         <Route path="/groups/:id" element={
           <ProtectedRoute>
             <GroupDetail />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/groups/:id/expenses" element={
+          <ProtectedRoute>
+            <Expenses />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/groups/:id/expenses/new" element={
+          <ProtectedRoute>
+            <AddExpense />
           </ProtectedRoute>
         } />
         

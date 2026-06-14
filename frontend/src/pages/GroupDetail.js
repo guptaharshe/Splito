@@ -37,11 +37,19 @@ export default function GroupDetail() {
           &larr; Back to Dashboard
         </Link>
         
-        <div className="mb-8">
-          <h1 className="text-lg font-semibold">{group.name}</h1>
-          <p className="text-text-secondary text-sm">
-            Created {new Date(group.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-          </p>
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-lg font-semibold">{group.name}</h1>
+            <p className="text-text-secondary text-sm">
+              Created {new Date(group.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+            </p>
+          </div>
+          <Link 
+            to={`/groups/${id}/expenses`}
+            className="bg-transparent border border-border-default hover:border-border-focus text-text-primary px-4 py-2 text-sm font-medium rounded-base transition-colors"
+          >
+            View Expenses
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
