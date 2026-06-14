@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchApi } from '../lib/api';
+import { FiArrowLeft, FiArrowRight } from 'react-icons/fi';
 
 export default function GroupDetail() {
   const { id } = useParams();
@@ -35,66 +36,88 @@ export default function GroupDetail() {
     loadGroupData();
   }, [id]);
 
-  if (loading) return <div className="p-8 text-text-secondary">Loading group...</div>;
+  if (loading) {
+    return (
+      <div className="px-8 py-2 max-w-7xl mx-auto flex flex-col animate-pulse w-full mt-4">
+        <div className="flex flex-col">
+          <div className="mb-8 flex justify-between items-center">
+            <div className="flex flex-col gap-3">
+              <div className="h-8 w-48 bg-border-default/40 rounded"></div>
+              <div className="h-4 w-32 bg-border-default/30 rounded"></div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-32 bg-border-default/30 rounded"></div>
+              <div className="h-10 w-36 bg-border-default/30 rounded"></div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-bg-surface border border-border-subtle rounded p-4 h-64"></div>
+            <div className="bg-bg-surface border border-border-subtle rounded p-4 h-64"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (error) return <div className="p-8 text-error">{error}</div>;
   if (!group) return <div className="p-8 text-text-secondary">Group not found</div>;
 
   const now = new Date().toISOString().split('T')[0];
 
   return (
-    <div className="min-h-screen bg-bg-base text-text-primary p-8">
-      <div className="max-w-[1100px] mx-auto">
-        <Link to="/dashboard" className="text-accent text-sm hover:underline mb-4 inline-block">
-          &larr; Back to Dashboard
-        </Link>
-        
+    <div className="px-8 py-2 max-w-7xl mx-auto flex flex-col animate-fade-in w-full">
+      <div className="flex flex-col">
         <div className="mb-8 flex justify-between items-center">
           <div>
-            <h1 className="text-lg font-semibold">{group.name}</h1>
-            <p className="text-text-secondary text-sm">
-              Created {new Date(group.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+            <h1 className="text-2xl font-bold text-text-primary tracking-tight mb-1">{group.name}</h1>
+            <p className="text-sm text-text-secondary">
+              Created on {new Date(group.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
             </p>
           </div>
-          <Link 
-            to={`/groups/${id}/expenses`}
-            className="bg-transparent border border-border-default hover:border-border-focus text-text-primary px-4 py-2 text-sm font-medium rounded-base transition-colors"
-          >
-            View Expenses
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link 
+              to="/groups" 
+              className="bg-text-primary text-bg-base px-4 py-2 text-sm font-medium rounded transition-opacity flex items-center gap-2 group"
+            >
+              <FiArrowLeft size={16} /> Back to Groups
+            </Link>
+            <Link 
+              to={`/groups/${id}/expenses`}
+              className="bg-text-primary text-bg-base px-4 py-2 text-sm font-medium rounded transition-opacity flex items-center gap-2 group"
+            >
+              View Expenses <FiArrowRight size={16}/>
+            </Link>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Members Column */}
-          <div className="bg-bg-surface border border-border-subtle rounded-base p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-md font-semibold">Members</h2>
-              <button className="text-accent text-sm font-medium hover:text-accent-hover">
-                + Add Member
-              </button>
+          <div className="bg-bg-surface border border-border-subtle rounded p-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-text-primary">Members</h2>
             </div>
             
-            <div className="border-b border-border-subtle mb-4"></div>
+            <div className="border-b border-border-subtle mb-3 mt-2"></div>
 
             <ul className="flex flex-col gap-3">
               {members.map(m => {
                 let status = 'Active';
                 let isInactive = false;
                 
-                if (m.left_at && m.left_at <= now) {
+                if (m.left_at && new Date(m.left_at) <= new Date(now)) {
                   status = `Left ${new Date(m.left_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
                   isInactive = true;
                 } else if (!m.joined_at) {
                   status = 'Guest';
-                } else if (m.joined_at > now) {
-                   status = `Joining ${m.joined_at}`;
-                } else if (new Date(m.joined_at) > new Date('2026-03-01')) {
-                   status = `Joined ${new Date(m.joined_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+                } else if (new Date(m.joined_at) > new Date(group.created_at)) {
+                  status = `Joined ${new Date(m.joined_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+                } else {
+                  status = 'Active';
                 }
 
                 return (
-                  <li key={m.id} className={`flex justify-between items-center text-sm ${isInactive ? 'text-text-tertiary' : 'text-text-primary'}`}>
+                  <li key={m.id} className={`flex justify-between items-center text-sm ${isInactive ? 'text-error' : 'text-text-primary'}`}>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px]">{isInactive ? '○' : '●'}</span>
+                      <span className="text-[10px]">●</span>
                       <span>{m.name}</span>
                     </div>
                     <span>{status}</span>
@@ -105,9 +128,11 @@ export default function GroupDetail() {
           </div>
 
           {/* Balances Column */}
-          <div className="bg-bg-surface border border-border-subtle rounded-base p-6">
-            <h2 className="text-md font-semibold mb-4">Balances</h2>
-            <div className="border-b border-border-subtle mb-4"></div>
+          <div className="bg-bg-surface border border-border-subtle rounded p-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-text-primary">Balances</h2>
+            </div>
+            <div className="border-b border-border-subtle mb-3 mt-2"></div>
             
             <ul className="flex flex-col gap-3 mb-6">
               {balances.map(b => {
@@ -136,7 +161,7 @@ export default function GroupDetail() {
                   </li>
                 );
               })}
-              {balances.length === 0 && <li className="text-sm text-text-tertiary">No balances yet.</li>}
+              {balances.length === 0 && <li className="text-sm text-text-secondary">No balances yet.</li>}
             </ul>
 
             {pairwise.length > 0 && (

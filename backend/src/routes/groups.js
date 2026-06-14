@@ -30,10 +30,13 @@ router.get('/', async (req, res) => {
 
     if (error) throw error;
 
-    // Remove the nested group_members array to clean up response
+    // Remove the nested group_members array to clean up response and add memberCount
     const formattedData = data.map(g => {
       const { group_members, ...groupData } = g;
-      return groupData;
+      return {
+        ...groupData,
+        memberCount: group_members ? group_members.length : 0
+      };
     });
 
     res.json({ groups: formattedData });

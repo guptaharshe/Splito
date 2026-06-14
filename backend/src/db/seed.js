@@ -1,139 +1,83 @@
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 const { createClient } = require('@supabase/supabase-js');
-const dotenv = require('dotenv');
-
-dotenv.config();
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
 );
 
-// All users to seed
-const users = [
-  { name: 'Admin', email: 'admin@splito.com', password: 'Admin@123', role: 'admin' },
-  { name: 'Aisha', email: 'aisha@splito.com', password: 'Flat@123', role: 'member' },
-  { name: 'Rohan', email: 'rohan@splito.com', password: 'Flat@123', role: 'member' },
-  { name: 'Priya', email: 'priya@splito.com', password: 'Flat@123', role: 'member' },
-  { name: 'Meera', email: 'meera@splito.com', password: 'Flat@123', role: 'member' },
-  { name: 'Sam',   email: 'sam@splito.com',   password: 'Flat@123', role: 'member' },
-  { name: 'Dev',   email: 'dev@splito.com',   password: 'Flat@123', role: 'member' },
-];
-
-// Membership dates for Flat 4B
-const memberships = {
-  'Aisha': { joined_at: '2026-02-01', left_at: null },
-  'Rohan': { joined_at: '2026-02-01', left_at: null },
-  'Priya': { joined_at: '2026-02-01', left_at: null },
-  'Meera': { joined_at: '2026-02-01', left_at: '2026-03-31' },
-  'Sam':   { joined_at: '2026-04-15', left_at: null },
-  'Dev':   { joined_at: null, left_at: null },  // guest — no permanent membership
-};
-
 async function seed() {
-  console.log('Starting seed...\n');
+  console.log('Starting seed process...');
 
-  const userIds = {};
+  // 1. Wipe existing test data
+  console.log('Cleaning up existing groups and expenses...');
+  await supabase.from('expense_splits').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  await supabase.from('expenses').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  await supabase.from('group_members').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  await supabase.from('groups').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  
+  const usersToCreate = [
+    { email: 'aisha@splito.com', name: 'Aisha' },
+    { email: 'rohan@splito.com', name: 'Rohan' },
+    { email: 'priya@splito.com', name: 'Priya' },
+    { email: 'meera@splito.com', name: 'Meera' },
+    { email: 'dev@splito.com', name: 'Dev' },
+    { email: 'sam@splito.com', name: 'Sam' }
+  ];
 
-  // Step 1: Create users in Supabase Auth + users table
-  for (const user of users) {
-    console.log(`Creating user: ${user.name} (${user.email})`);
+  const createdUsers = {};
 
-    // Create in Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: user.email,
-      password: user.password,
-      email_confirm: true,
-    });
-
-    if (authError) {
-      // If user already exists, fetch their ID
-      if (authError.message.includes('already') || authError.status === 422) {
-        console.log(`  Auth user already exists, fetching ID...`);
-        const { data: listData } = await supabase.auth.admin.listUsers();
-        const existing = listData.users.find(u => u.email === user.email);
-        if (existing) {
-          userIds[user.name] = existing.id;
-        } else {
-          console.error(`  Could not find existing user: ${user.email}`);
-          continue;
-        }
-      } else {
-        console.error(`  Auth error: ${authError.message}`);
-        continue;
-      }
-    } else {
-      userIds[user.name] = authData.user.id;
-    }
-
-    // Insert into users table
-    const { error: dbError } = await supabase
-      .from('users')
-      .upsert({
-        id: userIds[user.name],
-        name: user.name,
-        email: user.email,
-        role: user.role,
+  for (const u of usersToCreate) {
+    const { data: authData } = await supabase.auth.admin.listUsers();
+    let authUser = authData.users.find(user => user.email === u.email);
+    
+    if (!authUser) {
+      console.log(`Creating auth user: ${u.email}`);
+      const { data: newAuthUser, error } = await supabase.auth.admin.createUser({
+        email: u.email,
+        password: 'password123',
+        email_confirm: true
       });
-
-    if (dbError) {
-      console.error(`  DB error: ${dbError.message}`);
-    } else {
-      console.log(`  ✓ Created: ${user.name} (${userIds[user.name]})`);
+      if (error) throw error;
+      authUser = newAuthUser.user;
     }
+
+    // Upsert into public.users
+    const { data: publicUser, error: publicError } = await supabase.from('users').upsert({
+      id: authUser.id,
+      email: u.email,
+      name: u.name,
+      role: 'member'
+    }).select().single();
+    if (publicError) throw publicError;
+
+    createdUsers[u.name] = publicUser.id;
   }
 
-  // Step 2: Create the "Flat 4B" group
-  console.log('\nCreating group: Flat 4B');
-  const { data: groupData, error: groupError } = await supabase
-    .from('groups')
-    .insert({
-      name: 'Flat 4B',
-      description: 'Flatmates sharing expenses',
-      created_by: userIds['Admin'],
-    })
-    .select()
-    .single();
+  // 2. Create the Group
+  console.log('Creating group...');
+  const { data: group, error: groupError } = await supabase.from('groups').insert({
+    name: 'Flat 4B',
+    description: 'Flatmates Sharing Expenses',
+    created_at: '2026-02-01T00:00:00Z'
+  }).select().single();
+  if (groupError) throw groupError;
 
-  if (groupError) {
-    console.error(`  Group error: ${groupError.message}`);
-    return;
-  }
+  // 3. Add Members with specific timelines
+  const memberships = [
+    { user_id: createdUsers['Aisha'], group_id: group.id, joined_at: '2026-02-01' },
+    { user_id: createdUsers['Rohan'], group_id: group.id, joined_at: '2026-02-01' },
+    { user_id: createdUsers['Priya'], group_id: group.id, joined_at: '2026-02-01' },
+    { user_id: createdUsers['Meera'], group_id: group.id, joined_at: '2026-02-01', left_at: '2026-03-31' },
+    { user_id: createdUsers['Dev'], group_id: group.id, joined_at: '2026-03-08', left_at: '2026-03-12' },
+    { user_id: createdUsers['Sam'], group_id: group.id, joined_at: '2026-04-08' }
+  ];
 
-  const groupId = groupData.id;
-  console.log(`  ✓ Created group: ${groupId}`);
+  console.log('Adding members...');
+  const { error: membersError } = await supabase.from('group_members').insert(memberships);
+  if (membersError) throw membersError;
 
-  // Step 3: Add memberships
-  console.log('\nAdding memberships...');
-  for (const [name, dates] of Object.entries(memberships)) {
-    if (!userIds[name]) {
-      console.log(`  Skipping ${name} — no user ID`);
-      continue;
-    }
-
-    // Skip Dev if no joined_at (guest, not a permanent member)
-    if (!dates.joined_at) {
-      console.log(`  Skipping ${name} — guest (no joined_at date)`);
-      continue;
-    }
-
-    const { error: memberError } = await supabase
-      .from('group_members')
-      .insert({
-        group_id: groupId,
-        user_id: userIds[name],
-        joined_at: dates.joined_at,
-        left_at: dates.left_at,
-      });
-
-    if (memberError) {
-      console.error(`  Membership error for ${name}: ${memberError.message}`);
-    } else {
-      const status = dates.left_at ? `joined ${dates.joined_at}, left ${dates.left_at}` : `joined ${dates.joined_at}`;
-      console.log(`  ✓ ${name}: ${status}`);
-    }
-  }
-
-  console.log('\n✓ Seed complete!');
+  console.log('✅ Database successfully seeded with Flatmates cohort!');
 }
 
 seed().catch(console.error);

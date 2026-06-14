@@ -10,7 +10,6 @@ import Import from './pages/Import';
 import ImportReview from './pages/ImportReview';
 import ImportReport from './pages/ImportReport';
 import GroupsList from './pages/GroupsList';
-import Settings from './pages/Settings';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -28,12 +27,6 @@ function App() {
         <Route path="/groups" element={
           <ProtectedRoute>
             <GroupsList />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/settings" element={
-          <ProtectedRoute>
-            <Settings />
           </ProtectedRoute>
         } />
 

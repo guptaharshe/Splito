@@ -24,7 +24,8 @@ router.get('/analytics', async (req, res) => {
     // Total Users count
     const { count: totalUsers, error: err1 } = await supabase
       .from('users')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .eq('role', 'member');
     if (err1) throw err1;
 
     // Total Groups count

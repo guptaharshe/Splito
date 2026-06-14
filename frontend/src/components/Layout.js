@@ -39,7 +39,6 @@ export default function Layout({ children }) {
     { name: 'Dashboard', path: '/dashboard', icon: FiHome },
     { name: 'Groups', path: '/groups', icon: FiUsers },
     ...(isAdmin ? [{ name: 'Import Data', path: '/import', icon: FiUploadCloud }] : []),
-    { name: 'Settings', path: '/settings', icon: FiSettings },
   ];
 
   return (
