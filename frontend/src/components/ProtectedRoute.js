@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import Layout from './Layout';
 
 export default function ProtectedRoute({ children }) {
   const [session, setSession] = useState(null);
@@ -33,5 +34,5 @@ export default function ProtectedRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
 
-  return children;
+  return <Layout>{children}</Layout>;
 }

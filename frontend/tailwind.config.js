@@ -10,6 +10,8 @@ module.exports = {
         'bg-surface': '#FFFFFF',
         'bg-elevated': '#D4D4D8',
         'bg-input': '#F4F4F5',
+        'bg-sidebar': '#18181B', // Deep black/grey for sidebar
+        'sidebar-hover': '#27272A', // Hover state in sidebar
         'border-subtle': '#E4E4E7',
         'border-default': '#D4D4D8',
         'border-focus': '#A1A1AA',
