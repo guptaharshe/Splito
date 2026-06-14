@@ -2,8 +2,6 @@
 
 Splito is an end-to-end, full-stack expense sharing application designed to handle the messy reality of group finances. It takes complex, unstandardized transactional data (like a heavily customized Excel spreadsheet of flatmate expenses over several months) and transforms it into a mathematically rigorous, beautifully designed web application where every member can instantly see their exact debts and credits.
 
-![Splito Dashboard](https://github.com/guptaharshe/Splito)
-
 ## Features & Capabilities
 
 - **Intelligent Data Parsing:** Automatically ingests CSV data, seamlessly handling missing dates, messy notes, and varying currency formats.
