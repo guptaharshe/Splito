@@ -120,7 +120,7 @@ To allow GitHub Actions to SSH into your server, go to your GitHub Repository ->
 Add the following three secrets:
 - `DROPLET_IP`: The public IP address of your DigitalOcean droplet (e.g., `123.45.67.89`).
 - `SSH_USERNAME`: Your SSH username (usually `root`).
-- `SSH_PRIVATE_KEY`: The private SSH key that corresponds to the public key installed on your droplet. *(To get this, you can generate an SSH key locally or on the droplet and add the public part to `~/.ssh/authorized_keys` on the droplet).*
+- `SSH_PASSWORD`: The password you use to SSH into your droplet.
 
 ### 2. How the Pipeline Works
 Once the secrets are added, any time you run `git push origin main`, GitHub Actions will automatically:
