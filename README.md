@@ -4,7 +4,7 @@ Splito is a full-stack shared-expenses app for messy, real-world group finances.
 
 ## Production Deployment
 
-- Live app: `http://139.59.42.11`
+- Live app: `http://139.59.42.119`
 - Hosting: DigitalOcean droplet with Nginx reverse proxy and a Node/Express backend
 - Production frontend API base path: `/api`
 
