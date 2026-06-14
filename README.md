@@ -41,7 +41,8 @@ The math balances perfectly. Every single paise is accounted for.
 
 The application features a fully secure login system. You can explore the dashboard from different perspectives using the following pre-configured accounts.
 
-**Password for ALL accounts:** `password123`
+- **Admin Password:** `Admin@123`
+- **User Password:** `Flat@123` (for all flatmates)
 
 | Role / Name | Email | Description |
 | :--- | :--- | :--- |
