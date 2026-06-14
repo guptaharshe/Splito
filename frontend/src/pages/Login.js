@@ -87,7 +87,7 @@ export default function Login() {
         </form>
 
         <p className="text-xs text-text-secondary mt-6 text-center">
-          Having trouble? Contact your group admin to verify your access.
+          Having trouble? For test credentials, please refer to the <strong className="text-text-primary">README.md</strong>
         </p>
       </div>
     </div>
