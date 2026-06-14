@@ -6,22 +6,33 @@ export default function GroupDetail() {
   const { id } = useParams();
   const [group, setGroup] = useState(null);
   const [members, setMembers] = useState([]);
+  const [balances, setBalances] = useState([]);
+  const [pairwise, setPairwise] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    async function loadGroup() {
+    async function loadGroupData() {
       try {
-        const data = await fetchApi(`/api/groups/${id}`);
-        setGroup(data.group);
-        setMembers(data.members);
+        const [groupData, balancesData] = await Promise.all([
+          fetchApi(`/api/groups/${id}`),
+          fetchApi(`/api/groups/${id}/balances`)
+        ]);
+        
+        setGroup(groupData.group);
+        setMembers(groupData.members);
+        
+        // Sort balances: positive first (owed), then negative (owes)
+        const sortedBalances = balancesData.balances.sort((a, b) => b.net_balance_paise - a.net_balance_paise);
+        setBalances(sortedBalances);
+        setPairwise(balancesData.pairwise);
       } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);
       }
     }
-    loadGroup();
+    loadGroupData();
   }, [id]);
 
   if (loading) return <div className="p-8 text-text-secondary">Loading group...</div>;
@@ -93,11 +104,54 @@ export default function GroupDetail() {
             </ul>
           </div>
 
-          {/* Balances Column (Placeholder for Phase 6) */}
+          {/* Balances Column */}
           <div className="bg-bg-surface border border-border-subtle rounded-base p-6">
             <h2 className="text-md font-semibold mb-4">Balances</h2>
             <div className="border-b border-border-subtle mb-4"></div>
-            <p className="text-sm text-text-tertiary">Balance calculations will be implemented in Phase 6.</p>
+            
+            <ul className="flex flex-col gap-3 mb-6">
+              {balances.map(b => {
+                const amount = b.net_balance_paise / 100;
+                let statusClass = 'text-text-primary';
+                let statusText = '[even]';
+                let formattedAmount = `₹0.00`;
+
+                if (amount > 0) {
+                  statusClass = 'text-success';
+                  statusText = '[owed]';
+                  formattedAmount = `+₹${amount.toFixed(2)}`;
+                } else if (amount < 0) {
+                  statusClass = 'text-error';
+                  statusText = '[owes]';
+                  formattedAmount = `-₹${Math.abs(amount).toFixed(2)}`;
+                }
+
+                return (
+                  <li key={b.user_id} className="flex justify-between items-center text-sm">
+                    <span>{b.name}</span>
+                    <div className={`flex gap-2 w-[120px] justify-between ${statusClass}`}>
+                      <span>{formattedAmount}</span>
+                      <span className="text-text-tertiary">{statusText}</span>
+                    </div>
+                  </li>
+                );
+              })}
+              {balances.length === 0 && <li className="text-sm text-text-tertiary">No balances yet.</li>}
+            </ul>
+
+            {pairwise.length > 0 && (
+              <>
+                <h3 className="text-sm font-medium mb-3 mt-8">Suggested Settlements:</h3>
+                <ul className="flex flex-col gap-2">
+                  {pairwise.map((p, idx) => (
+                    <li key={idx} className="flex justify-between items-center text-sm text-text-secondary">
+                      <span>{p.from_user_name} &rarr; {p.to_user_name}</span>
+                      <span className="text-text-primary">₹{(p.amount_paise / 100).toFixed(2)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </div>
         </div>
       </div>
