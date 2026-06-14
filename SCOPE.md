@@ -1,34 +1,113 @@
 # Splito - Project Scope
 
 ## Project Overview
-Splito is an end-to-end, full-stack expense sharing application designed specifically for complex, messy, and real-world group finance scenarios (like a flatshare over several months). The core objective of this project was to ingest raw, unstandardized CSV data containing real-world flatmate expenses (with variable split logic), accurately process and persist those expenses using a custom algorithm, and display them through a beautiful, modern, pixel-perfect user interface.
 
-## Core Deliverables
+Splito is a shared-expenses app for a flatshare with messy CSV data, changing membership, multiple split rules, and a need for reviewable imports. The assignment required a working app, a documented decision trail, and an import report that explains every anomaly rather than hiding it. The finalized import report now records 17 anomaly records, 26 clean rows imported, and 5 rejected rows.
 
-### 1. Robust Data Ingestion Engine
-- **CSV Parsing Engine:** Handles raw, messy user data containing various split types (`equal`, `share`, `percentage`, `unequal`).
-- **Data Standardization:** Reconciles messy, real-world spreadsheet notes and user inconsistencies into structured database entities.
-- **Dynamic Split Algorithms:** Interprets complex split rules (e.g. "Aisha owes 30%, Rohan owes 70%" or "Dev owes 2 shares, Sam owes 1 share") and accurately converts them into exact monetary debts on a per-transaction basis.
-- **Transactional Integrity:** Uses Supabase database transactions and RPC functions to ensure atomic ingestion of batches (all-or-nothing rollback).
+## What the App Covers
 
-### 2. High-Performance Math & Settlement Engine
-- **Accurate Pairwise Settlement:** Implements an algorithm that calculates the mathematically optimal way for a group to settle their debts using the minimum number of transactions.
-- **Integer-Based Currency:** All money is tracked using `paise` (integers) to completely eliminate floating-point rounding errors and ensure the ledger always perfectly balances to exactly zero.
-- **Member Timelines:** Accurately calculates net balances by accounting for the exact dates members joined and left the group (e.g., ignoring expenses that occurred before a member moved in, but persisting their debts after they move out).
+### 1. Login and Role-Based Access
 
-### 3. Full-Stack Web Application
-- **Backend (Express.js):** A lightweight, robust API server interfacing directly with Supabase via Service Roles to bypass RLS for administrative ingestion, while serving standard data to the client securely.
-- **Frontend (React.js):** A modern Single Page Application built to consume the backend API seamlessly.
-- **Authentication:** Integrated Supabase Auth to allow members to securely log in and view their personal analytics without seeing sensitive data belonging to others.
+- Supabase Auth login
+- Admin and member dashboard variants
+- Protected routes for app screens
 
-### 4. Modern, Premium UI/UX Design System
-- **Tailwind CSS Styling:** A custom, carefully curated design system leveraging sophisticated color palettes, glassmorphism, responsive grids, and clean typography (Inter/Roboto).
-- **Role-Based Views:**
-  - **Admin View:** Full God-mode view of the entire ingestion pipeline, historical batches, group-wide data, and a macro-view of all balances.
-  - **User View:** A personalized dashboard specifically tailored to highlight exactly what that user owes, what they are owed, and their personal transaction history.
-- **Visual Analytics:** Badges, dynamic colors, and real-time loading skeletons enhance the application's premium feel.
+### 2. Group and Member Management
 
-## Out of Scope
-- Direct payment gateway integration (e.g., Stripe, UPI) for actually moving money.
-- Real-time chat or push notifications.
-- Automatic email generation.
+- Create and list groups
+- Add members to groups
+- Track `joined_at` and `left_at` dates
+
+### 3. Expenses and Balances
+
+- Create expenses for a group
+- Support split types that appear in the backend: `equal`, `unequal`, `percentage`, `share`
+- Compute group balances and pairwise suggested settlements
+- Store money as integer paise values
+
+### 4. CSV Import Workflow
+
+- Upload the provided CSV
+- Detect anomalies before finalizing an import
+- Let the reviewer approve or reject blocking rows
+- Produce an import report with the detected anomalies and actions taken
+
+## CSV Anomaly Log
+
+The current code path yields 17 anomaly records across the provided file. The policy below is the one implemented in the repo today, and the finalized report is the canonical source for this documentation pass.
+
+| CSV Row | Anomaly | Handling Policy |
+| --- | --- | --- |
+| 5 | Timeline violation: Dev appears before `joined_at` | Block until the row is corrected or the user is excluded |
+| 6 | Timeline violation: duplicate Dev dinner before `joined_at` | Block until corrected |
+| 7 | Comma in amount (`1,200`) | Auto-strip the comma and continue |
+| 9 | Name case (`priya` vs `Priya`) | Auto-normalize to the canonical member name |
+| 11 | Unknown payer (`Priya S`) | Block and require manual mapping |
+| 13 | Missing payer | Block and require manual assignment or rejection |
+| 15 | Percentage total is 110% | Block until the split is corrected |
+| 20 | USD currency | Convert to INR using the fixed policy in code (`84.00` per USD) |
+| 21 | USD currency | Convert to INR using the fixed policy in code (`84.00` per USD) |
+| 23 | USD currency | Convert to INR using the fixed policy in code (`84.00` per USD) |
+| 26 | Negative amount | Treat as a refund-style entry and keep the sign policy explicit |
+| 26 | USD currency | Convert to INR using the fixed policy in code (`84.00` per USD) |
+| 27 | Name case (`rohan` vs `Rohan`) | Auto-normalize to the canonical member name |
+| 28 | Missing currency | Default to INR |
+| 31 | Zero amount | Skip the row |
+| 32 | Percentage total is 110% | Block until the split is corrected |
+| 42 | Conflicting split_type (`equal` with split details) | Ignore the extra split details |
+
+## Known Manual-Review Items
+
+These issues are present in the CSV and should be called out in the live review, even though the current parser does not auto-flag every one of them:
+
+- Duplicate/near-duplicate Marina Bites dinner entries on 2026-02-08
+- Duplicate/contradictory Thalassa dinner entries on 2026-03-11
+- `Rohan paid Aisha back` on 2026-02-25, which is a settlement-like entry rather than a normal expense
+- The April/May cleaning-service date ambiguity in `04-05-2026`
+
+## Finalized Import Outcome
+
+The finalized report resolved the 17 anomalies as follows:
+
+| Row | Final Status | Notes |
+| --- | --- | --- |
+| 5 | Approved | Kept as the selected Marina Bites dinner row |
+| 6 | Rejected | Duplicate Marina Bites dinner row |
+| 7 | Auto-fixed | Comma removed from amount |
+| 9 | Auto-fixed | Payer name normalized to `Priya` |
+| 11 | Rejected | Unknown payer `Priya S` could not be safely mapped |
+| 13 | Rejected | Missing payer |
+| 15 | Rejected | Invalid percentage total |
+| 20 | Auto-fixed | USD converted to INR |
+| 21 | Auto-fixed | USD converted to INR |
+| 23 | Auto-fixed | USD converted to INR |
+| 26 | Auto-fixed | Negative USD refund handled explicitly |
+| 27 | Auto-fixed | Payer name normalized to `Rohan` |
+| 28 | Auto-fixed | Missing currency defaulted to INR |
+| 31 | Auto-fixed | Zero-amount row skipped |
+| 32 | Rejected | Invalid percentage total |
+| 42 | Auto-fixed | Extra split details ignored |
+
+## Database Schema
+
+The schema is implemented in `backend/src/db/schema.sql` and contains these tables:
+
+| Table | Purpose |
+| --- | --- |
+| `users` | Public user profile linked to `auth.users` |
+| `groups` | Expense groups |
+| `group_members` | Membership history with `joined_at` and `left_at` |
+| `expenses` | Expense records, split type, payer, and import metadata |
+| `expense_splits` | Per-user responsibility for each expense |
+| `settlements` | Direct payments between users |
+| `import_batches` | CSV upload batch tracking |
+| `import_anomalies` | Detected issues, review status, and resolution metadata |
+
+## Design Boundary
+
+Not included in scope:
+
+- Payment gateway integration
+- Real-time chat or notifications
+- Automatic email sending
+- A fully generic group creation and invite system beyond the screens already in the app

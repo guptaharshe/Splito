@@ -1,90 +1,127 @@
-# Splito 💸
+# Splito
 
-Splito is an end-to-end, full-stack expense sharing application designed to handle the messy reality of group finances. It takes complex, unstandardized transactional data (like a heavily customized Excel spreadsheet of flatmate expenses over several months) and transforms it into a mathematically rigorous, beautifully designed web application where every member can instantly see their exact debts and credits.
+Splito is a full-stack shared-expenses app for messy, real-world group finances. It imports a raw CSV export, detects anomalies, lets an admin review and resolve them, and then surfaces balances and suggested settlements for each member.
 
-## Features & Capabilities
+## Production Deployment
 
-- **Intelligent Data Parsing:** Automatically ingests CSV data, seamlessly handling missing dates, messy notes, and varying currency formats.
-- **Dynamic Split Mathematics:** Accurately processes 4 distinct split algorithms on a per-expense basis:
-  - `Equal`: Splits the expense mathematically equally across all active group members.
-  - `Share`: Splits based on proportional units (e.g., Member A pays 2 shares, Member B pays 1 share).
-  - `Percentage`: Divides the cost based on explicit percentages.
-  - `Unequal`: Takes hardcoded integer amounts assigned to specific members.
-- **Temporal Member Tracking:** The engine strictly enforces move-in and move-out dates (`joined_at`, `left_at`). If an expense occurs before a member moves in, they are entirely excluded from the split. If a member leaves, their historical debts correctly remain on their ledger.
-- **Optimal Path Settlements:** Analyzes the total web of group debt and generates the mathematically shortest path to zero (e.g., eliminating the need for Member A to pay Member B if Member B owes Member C, telling A to just pay C directly).
-- **Floating-Point Immunity:** Operates 100% on lowest-denomination integer math (`paise`) under the hood, ensuring fractions of a cent are accurately rounded and preventing the catastrophic ledger drift common in JavaScript finance apps.
+- Live app: `http://139.59.42.11`
+- Hosting: DigitalOcean droplet with Nginx reverse proxy and a Node/Express backend
+- Production frontend API base path: `/api`
 
----
+## Features
 
-## The Mathematics: Justifying the Ledger
+- Login with Supabase Auth
+- Group and member management with `joined_at` / `left_at` timelines
+- Expense creation and balance views
+- CSV import review flow with anomaly detection and approvals
+- Pairwise balance computation and suggested settlements
+- Integer-based currency math in paise to avoid floating-point drift
 
-The core objective of Splito was to ingest raw, unstandardized Excel data and mathematically guarantee an exact balance. Our engine perfectly mirrors the intent of the original spreadsheet through rigorous integer distribution.
+## Local Setup
 
-### How the Math Works (vs Excel)
-1. **Total Paid:** The system sums up exactly how much real-world money a user physically paid for group expenses.
-2. **Total Owed (Responsibility):** The system parses the split rule for every single transaction (e.g., "Equal" among 6 people, or "Percentage" 30/70) and calculates that user's exact share of the burden.
-3. **The Remainder Rule:** If an expense of ₹10.00 is split equally among 3 people, it cannot be ₹3.33 each (which leaves ₹0.01 unaccounted for). The Splito algorithm assigns ₹3.34 to Person A, ₹3.33 to Person B, and ₹3.33 to Person C. **No money is ever lost or created.**
-4. **Net Balance Formula:** `[Total Amount Paid] - [Total Personal Responsibility] = Net Balance`
-   - **Positive Balance:** The user paid MORE than their fair share. They are owed money.
-   - **Negative Balance:** The user paid LESS than their fair share. They owe money.
+### Prerequisites
 
-### Example Justification (Aisha)
-In the raw Excel sheet, Aisha was the primary payer for massive group expenses like Rent and Security Deposits.
-- Aisha's Total Physical Payments for the group: **₹1,22,993.90**
-- Aisha's Personal Share (her actual responsibility of those bills): **₹23,660.00**
-- **Aisha's Splito Dashboard Net Balance:** **+₹99,333.90 (Owed)** 
-The math balances perfectly. Every single paise is accounted for.
+- Node.js 20+ recommended
+- A Supabase project
+- Two `.env` files: one in `backend/` and one in `frontend/`
 
----
+### Backend
 
-## 🔑 Demo Accounts & Credentials
+```bash
+cd backend
+npm install
+```
 
-The application features a fully secure login system. You can explore the dashboard from different perspectives using the following pre-configured accounts.
+Create `backend/.env` with at least:
 
-- **Admin Password:** `Admin@123`
-- **User Password:** `Flat@123` (for all flatmates)
+```env
+PORT=3001
+SUPABASE_URL=your-supabase-url
+SUPABASE_SERVICE_KEY=your-service-role-key
+```
 
-| Role / Name | Email | Description |
-| :--- | :--- | :--- |
-| **System Admin** | `admin@splito.com` | God-mode. Can upload CSVs, run batch ingestion, and view total group balances. |
-| **Aisha** | `aisha@example.com` | Primary payer. Has a massive positive balance (owed money). |
-| **Priya** | `priya@example.com` | Active flatmate. Has a large negative balance (owes money). |
-| **Rohan** | `rohan@example.com` | Active flatmate. Has a negative balance (owes money). |
-| **Dev** | `dev@example.com` | Flatmate who left early (Mar 12). |
-| **Meera** | `meera@example.com` | Flatmate who left early (Mar 31). Dashboard correctly preserves her historical debt! |
-| **Sam** | `sam@example.com` | Flatmate who joined late (Apr 8). Dashboard correctly ignores expenses before this date. |
+Run the API:
 
-*(Note: Log in as the Admin to see the macro-view of the entire group. Log in as a User to see their highly personalized dashboard.)*
+```bash
+npm run dev
+```
 
----
+### Frontend
 
-## 🚀 Future Roadmap & Possible Features
+```bash
+cd frontend
+npm install
+```
 
-While the core math engine and viewing dashboards are feature-complete, Splito's architecture is highly extensible. The following features are primed for future development:
+Create `frontend/.env` with:
 
-1. **Settle Up (Ledger Integration):** 
-   - A dedicated feature allowing users to record physical payments made to each other (e.g., "I sent Aisha ₹10,000 via UPI").
-   - These records would dynamically update the Net Balances and automatically recalculate the optimal "Suggested Settlements" path in real time.
-2. **Dynamic Group Management:**
-   - Full UI workflows for creating brand new groups from scratch.
-   - The ability to invite new members via email or joining links, dynamically updating the database relations.
-3. **Granular Expense Editor:**
-   - A highly detailed view for individual expenses, allowing users to modify a split rule retroactively (e.g., changing an "Equal" split to an "Unequal" split) directly from the UI without requiring an admin CSV re-import.
-4. **Export & Reporting:**
-   - One-click PDF or CSV exports of a user's monthly expense history and tax-deductible items.
+```env
+REACT_APP_SUPABASE_URL=your-supabase-url
+REACT_APP_SUPABASE_ANON_KEY=your-anon-key
+REACT_APP_API_URL=http://localhost:3001
+```
 
----
+Run the app:
 
-## Technology Stack
+```bash
+npm start
+```
 
-- **Frontend:** React 18, React Router DOM v6, Tailwind CSS (Custom Design System).
-- **Backend:** Node.js, Express.js.
-- **Database:** Supabase (PostgreSQL), `@supabase/supabase-js`.
-- **Authentication:** Supabase Auth.
-- **Data Pipeline:** `csv-parse`, custom mathematical settlement algorithms.
+For production, set `REACT_APP_API_URL=/api` so the frontend uses the reverse proxy.
+
+## Demo Accounts
+
+- Admin password: `Admin@123`
+- Member password: `Flat@123`
+
+Accounts used in the assignment dataset:
+
+| Role / Name | Email | Notes |
+| --- | --- | --- |
+| System Admin | `admin@splito.com` | Admin dashboard and import flow |
+| Aisha | `aisha@example.com` | Primary payer |
+| Priya | `priya@example.com` | Active member |
+| Rohan | `rohan@example.com` | Active member |
+| Dev | `dev@example.com` | Left early |
+| Meera | `meera@example.com` | Left on `2026-03-31` |
+| Sam | `sam@example.com` | Joined on `2026-04-08` |
 
 ## Documentation
-For deeper dives into how Splito was built, please review the accompanying project documentation files:
-- `SCOPE.md`: The overarching project goals and deliverables.
-- `DECISIONS.md`: The technical architecture and algorithmic choices made during development.
-- `AI_USAGE.md`: A transparent breakdown of how AI collaborated on code, design, and math.
+
+- `SCOPE.md` - assignment scope, anomaly log, and database schema
+- `DECISIONS.md` - significant decisions, options considered, and rationale
+- `IMPORT_REPORT.md` - import report for the provided CSV
+- `AI_USAGE.md` - AI tools used, prompts, mistakes, and corrections
+
+## AI Assistance
+
+AI was used as a development collaborator for parser design, split math, UI scaffolding, and documentation drafting. The full breakdown, including mistakes that were caught and corrected, is in `AI_USAGE.md`.
+
+## Final Import Result
+
+The finalized import report for the provided CSV currently records:
+
+- 42 total rows processed
+- 26 clean rows imported
+- 17 anomalies detected
+- 5 rows rejected
+
+The resolved rows in the finalized report are:
+
+- Row 5: accepted
+- Row 6: rejected
+- Row 7: auto-fixed
+- Row 9: auto-fixed
+- Row 11: rejected
+- Row 13: rejected
+- Row 15: rejected
+- Rows 20, 21, 23, 26, 27, 28, 31, 42: auto-fixed
+- Row 32: rejected
+
+## Tech Stack
+
+- Frontend: React, React Router, Tailwind CSS
+- Backend: Node.js, Express
+- Database: Supabase Postgres
+- Auth: Supabase Auth
+- Import pipeline: CSV parsing plus custom split and anomaly handling

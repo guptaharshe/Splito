@@ -1,40 +1,49 @@
 # Splito - AI Usage
 
-This document transparently outlines how AI assistants were utilized throughout the lifecycle of the Splito project. The AI was not merely a code-completion tool; it acted as a collaborative pair-programmer, system architect, and specialized problem solver.
+This document records how AI was used during development and, just as importantly, where it was wrong or incomplete.
 
-## 1. Data Parsing & Algorithmic Design
-The most significant AI contribution was in deciphering the highly complex math required to match the user's Excel spreadsheet rules.
+## Tools and Responsibilities
 
-**The Challenge:** The raw CSV data contained columns for specific individuals alongside columns for the "Total Expense", with various markers indicating whether an expense was split equally, by exact shares, by percentages, or completely unevenly. The math needed to calculate "who paid what" vs "who owes what" and then derive the net balance dynamically.
+- Chat-style AI was used to draft architecture, parser logic, UI scaffolding, and documentation.
+- The human developer remained responsible for reviewing the code, checking the CSV, and correcting the misleading parts.
+- The assignment specifically required us to document the AI help, not to hide it.
 
-**AI Intervention:** 
-- The AI parsed the initial Excel data layout to understand the underlying semantic meaning behind the columns.
-- It wrote the robust `importService.js` and `splitService.js` algorithms, successfully implementing the integer math conversion (paise) to prevent floating-point rounding errors.
-- It designed the fractional remainder logic, ensuring that odd amounts (e.g. ₹10.00 split 3 ways) always resolved without dropping a single cent.
+## Key Prompts Used
 
-## 2. Architecture & Database Normalization
-**The Challenge:** Taking a flat, 2D spreadsheet and translating it into a relational database schema that supports scalable users, groups, relational expenses, and dynamic splits.
+| Area | Example Prompt |
+| --- | --- |
+| CSV import | "Design a parser that can ingest a messy flatmate expense CSV and flag anomalies without silently guessing." |
+| Split math | "Implement equal, percentage, share, and unequal splits using integer paise math." |
+| Balance logic | "Compute net balances and suggested settlements from expenses and settlements." |
+| Docs | "Rewrite the project docs so they match the real implementation and the assignment requirements." |
 
-**AI Intervention:**
-- Designed the `schema.sql` outlining a 4-tier relational model: `Users`, `Groups`, `Expenses`, and `Expense_Splits`.
-- Wrote the seed script and initialization logic to dynamically map CSV usernames to actual Supabase Auth `uuid`s.
-- Recommended and implemented the Supabase Service Key architecture for the Node.js backend to facilitate massive bulk imports seamlessly.
+## Where AI Was Wrong
 
-## 3. UI/UX Design System
-**The Challenge:** Creating an interface that didn't just function, but felt premium, highly modern, and visually engaging.
+| Mistake | How We Caught It | What Changed |
+| --- | --- | --- |
+| AI implied all split types were fully exposed in the add-expense UI | `AddExpense.js` only enables the equal split form, while the other options are disabled | The docs now say the backend supports the split types, but the UI still exposes equal split first |
+| AI overstated timeline-aware balance handling | `balanceEngine.js` currently sums all expenses and settlements without filtering by `joined_at` / `left_at` | The scope and decisions docs now call this out as a deliberate tradeoff and a live-session discussion point |
+| AI described the import finalize flow as fully transactional | `fullImportService.js` is a best-effort ingestion path, not a single DB transaction | The docs were corrected to describe the review-first batch workflow honestly |
+| AI suggested the README was already complete for deployment | The repo docs did not mention the DigitalOcean host the assignment expects | README now includes the production URL `http://139.59.42.11` and the deployment model |
+| AI initially suspected the live 58-anomaly screenshot was the correct fresh import result | The finalized import report now shows 17 anomaly records, 26 clean rows imported, and 5 rejected rows | The docs were updated to match the finalized report and its row-by-row decisions |
 
-**AI Intervention:**
-- Authored the core `tailwind.config.js` design tokens (color palettes, font families, custom spacing).
-- Iteratively generated the React components, implementing best practices like `animate-fade-in` and `animate-pulse` for loading states.
-- Actively diagnosed and resolved complex CSS Grid vs Flexbox alignment bugs (such as card height stretching issues) through visual descriptions and live debugging.
+## Final Import Summary
 
-## 4. Debugging & Rapid Prototyping
-**The Challenge:** The project encountered several sophisticated bugs, such as state invalidation caching errors, asynchronous React hydration issues, and foreign-key constraint violations during database rollbacks.
+The finalized import now resolves the CSV with the following pattern:
 
-**AI Intervention:**
-- **State Invalidation:** Diagnosed an issue where navigating between different user sessions caused stale dashboard data to render, resolving it by writing dynamic custom hooks to forcibly fetch fresh data.
-- **Data Integrity:** Identified a major flaw where deleted expenses were failing due to relational constraints (`expense_splits` needed to be dropped before `expenses`). The AI wrote the correction scripts and flawlessly wiped the duplicate rows from the database.
-- **Algorithmic Edge Cases:** Found an edge case where users who left a group were being excluded from the net balance calculation. The AI pinpointed the exact `.is('left_at', null)` constraint and removed it.
+- Approved: row 5
+- Rejected: rows 6, 11, 13, 15, 32
+- Auto-fixed: rows 7, 9, 20, 21, 23, 26, 27, 28, 31, 42
+
+This summary is the one to use in any live walkthrough of the assignment.
+
+## Concrete AI Contributions That Helped
+
+- Drafted the initial split-calculation approach using integer math.
+- Suggested a separate anomaly review table instead of hiding bad rows.
+- Helped shape the admin/member split in the frontend navigation.
+- Helped turn the assignment requirements into structured documentation files.
 
 ## Conclusion
-The AI served as an invaluable architect and debugger, vastly accelerating the development timeline while simultaneously elevating the mathematical rigor and visual aesthetics of the final application.
+
+AI was useful for acceleration, but every important claim was checked against the codebase. When the code and the AI answer disagreed, the code won.

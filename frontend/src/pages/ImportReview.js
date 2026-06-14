@@ -110,6 +110,7 @@ export default function ImportReview() {
 
   const pendingCount = blocking.filter(a => a.resolution === 'pending').length;
   const resolvedCount = anomalies.length - pendingCount;
+  const affectedRows = new Set(anomalies.map(a => a.row_number)).size;
 
   return (
     <div className="px-8 py-2 max-w-7xl mx-auto flex flex-col animate-fade-in w-full">
@@ -128,8 +129,9 @@ export default function ImportReview() {
 
         <div className="bg-bg-surface border border-border-subtle p-6 rounded mb-8 flex items-center justify-between">
           <div className="text-sm">
-            <span className="font-semibold text-lg">{anomalies.length}</span> anomalies total &nbsp;|&nbsp;
-            <span className="text-success ml-2">{resolvedCount}</span> resolved &nbsp;|&nbsp;
+            <span className="font-semibold text-lg">{anomalies.length}</span> anomaly records &nbsp;|&nbsp;
+            <span className="text-text-primary font-medium ml-2">{affectedRows}</span> affected rows &nbsp;|&nbsp;
+            <span className="text-success ml-2">{resolvedCount}</span> reviewed &nbsp;|&nbsp;
             <span className="text-warning font-semibold ml-2">{pendingCount}</span> pending
           </div>
           <button
@@ -140,6 +142,13 @@ export default function ImportReview() {
             {finalizing ? 'Finalizing...' : 'Finalize Import'}
             {!finalizing && <FiArrowRight size={16} />}
           </button>
+        </div>
+
+        <div className="bg-bg-surface border border-border-subtle rounded p-5 mb-8">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-text-secondary mb-2">How to review these anomalies</h2>
+          <p className="text-sm text-text-secondary leading-6">
+            A single CSV row can produce more than one anomaly record. Use <span className="text-success font-medium">Accept Suggestion</span> when the proposed fix is correct and the row should stay in the import, or <span className="text-error font-medium">Reject Entire Row</span> when the row should be excluded from the final import.
+          </p>
         </div>
 
         {blocking.length > 0 && (

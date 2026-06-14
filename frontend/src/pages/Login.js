@@ -87,7 +87,15 @@ export default function Login() {
         </form>
 
         <p className="text-xs text-text-secondary mt-6 text-center">
-          Having trouble? For test credentials, please refer to the <strong className="text-text-primary">README.md</strong>
+          Having trouble? For test credentials, please refer to the{' '}
+          <a
+            href="https://github.com/guptaharshe/Splito/blob/main/README.md"
+            target="_blank"
+            rel="noreferrer"
+            className="text-text-primary font-semibold hover:underline underline-offset-4 transition-colors"
+          >
+            README.md
+          </a>
         </p>
       </div>
     </div>

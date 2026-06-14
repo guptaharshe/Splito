@@ -1,41 +1,65 @@
-# Splito - Technical & Design Decisions
+# Splito - Technical and Design Decisions
 
-This document outlines the major architectural, algorithmic, and design decisions made during the construction of Splito, along with their justifications.
+This file records the major choices made during implementation, the alternatives considered, and why the current approach was selected.
 
-## 1. Algorithmic Processing
+## 1. Currency Math
 
-### The Integer Math Standard (`paise`)
-**Decision:** All monetary values in the database and calculation engine are stored as integers representing the lowest denomination of the currency (e.g., `paise` for INR, `cents` for USD).
-**Justification:** Floating-point arithmetic in JavaScript is notoriously unreliable (e.g., `0.1 + 0.2 = 0.30000000000000004`). By doing all math in integers and only converting to decimals for UI display, we entirely eliminated the risk of fractions leaking or balances getting corrupted by rounding errors over hundreds of complex splits.
+| Decision | Options Considered | Chosen Approach | Why |
+| --- | --- | --- | --- |
+| Store money as integer paise | Floats, decimals, integers | Integer paise | Avoids floating-point drift and keeps split math auditable |
+| Distribute rounding remainders deterministically | Drop remainder, round everyone, assign to payer/first member | Assign remainder one paise at a time | Guarantees the split sums exactly to the expense total |
 
-### Fractional Remainder Distribution
-**Decision:** When dividing an amount unevenly (e.g., ₹10.00 equally among 3 people), the engine distributes the integer remainder (1 paise) across members one by one.
-**Justification:** The ledger must always perfectly balance to zero. If 3 people split ₹10.00, mathematically they owe 3.333... each. Our engine charges Person A ₹3.34, Person B ₹3.33, and Person C ₹3.33. This ensures the sum of debts exactly equals the sum of the expense.
+## 2. Import Strategy
 
-### The Pairwise Settlement Algorithm
-**Decision:** The system implements an optimal pathing algorithm to resolve group debts. It aggregates all absolute net balances (everyone's total owed vs total owes), separates them into a `debtors` list and a `creditors` list, and matches the largest debtor with the largest creditor iteratively.
-**Justification:** This drastically minimizes the number of actual real-world bank transfers the group has to make. If A owes B, and B owes C, the engine simplifies this so A pays C directly, eliminating B as a middleman. 
+| Decision | Options Considered | Chosen Approach | Why |
+| --- | --- | --- | --- |
+| Review anomalies before final import | Fail fast, auto-fix silently, review queue | Review queue with approve/reject | The assignment explicitly asks for deliberate handling of imperfect data |
+| Flag suspicious rows instead of guessing | Auto-ignore, auto-merge, block all imports | Mixed severity model | Some issues are safe to auto-fix, while others need human approval |
+| Track the import in batches | Immediate inserts only, no batch state, batch table | `import_batches` + `import_anomalies` | Makes the process traceable and easy to report |
 
-## 2. System Architecture
+## 3. Balance Engine
 
-### Separation of Concerns (Backend vs Frontend)
-**Decision:** The application is split into a discrete Express.js backend and a React SPA frontend, rather than a monolithic full-stack framework like Next.js.
-**Justification:** The core of this application revolves around a highly complex, CPU-intensive data ingestion script that processes raw CSVs and handles database transactions. Keeping the API discrete allows for robust testing of the math engine completely independent of the UI state, and ensures UI re-renders never impact database insertions.
+| Decision | Options Considered | Chosen Approach | Why |
+| --- | --- | --- | --- |
+| Compute pairwise settlements from net balances | Keep raw debt graph only, use greedy pairwise matching | Greedy netting of debtor/creditor balances | Produces a shorter list of suggested transfers and is easy to explain live |
+| Keep settlements in the same model as expenses | Separate ledger, external payment system | `settlements` table in the same schema | Direct payments need to affect the same balance computation path |
 
-### Supabase Architecture
-**Decision:** We used Supabase for PostgreSQL, but heavily relied on the `@supabase/supabase-js` Service Key within the Node.js backend.
-**Justification:** Because the core feature involves an admin executing global data imports (wiping existing group ledgers and replacing them based on a master CSV), relying on client-side Row Level Security (RLS) policies would be incredibly messy and slow. The backend acts as a trusted orchestrator to handle the massive bulk transactions securely.
+## 4. Frontend Structure
 
-## 3. Interface & UX Decisions
+| Decision | Options Considered | Chosen Approach | Why |
+| --- | --- | --- | --- |
+| Separate admin and member views | One generic dashboard, separate apps | Role-based dashboard in one SPA | Keeps the UX simple while still exposing admin-only import tools |
+| Use skeleton loaders | Spinner only, blank screen | `animate-pulse` placeholders | Preserves layout during fetches and feels more polished |
+| Use a React SPA instead of a monolith | Next.js monolith, server-rendered app, SPA | React SPA plus Express API | Keeps the ingestion pipeline isolated from the UI and easier to reason about |
 
-### Two-Tier Dashboard System
-**Decision:** The dashboard heavily pivots based on the user's role (Admin vs Normal User).
-**Justification:** An admin needs to see macro-level data (CSV imports, group-wide metrics), whereas a flatmate only cares about "How much do I owe?" and "Who owes me?". Creating dedicated view modes removes clutter and significantly improves user experience.
+## 5. Known Tradeoffs
 
-### Real-time "Skeleton" Loading states
-**Decision:** We opted for `animate-pulse` skeletons over standard loading spinners.
-**Justification:** Skeletons preserve the structural layout of the dashboard while data is being fetched. This prevents the jarring "layout shift" that occurs when a spinner suddenly disappears and a massive table renders. It feels vastly more premium.
+| Tradeoff | Current Choice | Reason |
+| --- | --- | --- |
+| Some split types are backend-ready but not fully exposed in the add-expense UI | Equal split UI first | The CSV import and backend logic were higher priority for the assignment |
+| Import finalization is review-driven rather than fully transactional | Best-effort finalize flow | The review workflow was the core deliverable; hardening can be added later |
+| Fixed FX policy for USD rows | `84.00` INR per USD in code | The assignment asked for a deliberate policy, and the file documentation is the source of truth |
 
-### CSS Grid vs Flexbox
-**Decision:** The layout relies heavily on CSS Grid for the macro structure (columns, cards) and Flexbox for micro-alignments (items within cards).
-**Justification:** CSS Grid natively handles equal-height columns, which is essential for our "Members vs Balances" side-by-side view. By utilizing grid properly, we avoided hacky JavaScript height calculations and achieved a responsive layout that gracefully degrades to a single column on mobile.
+## 6. Final Import Decisions
+
+| Row | Final Decision | Why |
+| --- | --- | --- |
+| 5 | Approved | It is the selected dinner record and has contextual notes |
+| 6 | Rejected | Duplicate of row 5 with no added value |
+| 11 | Rejected | The payer name is unknown and cannot be safely inferred |
+| 13 | Rejected | A missing payer cannot be reconstructed with confidence |
+| 15 | Rejected | The percentage split sums to 110%, which would corrupt the ledger |
+| 32 | Rejected | Same percentage error as row 15, so it is also unsafe to import |
+
+## 7. Finalized Auto-Fixes
+
+| Row | Finalized Action | Why |
+| --- | --- | --- |
+| 7 | Auto-fixed | Amount commas are safe to strip |
+| 9 | Auto-fixed | Case normalization is deterministic and low-risk |
+| 20, 21, 23, 26 | Auto-fixed | USD rows are converted using the documented FX policy |
+| 26 | Auto-fixed | The negative amount is treated as a refund-style entry |
+| 27 | Auto-fixed | Case normalization is deterministic and low-risk |
+| 28 | Auto-fixed | Missing currency defaults to INR |
+| 31 | Auto-fixed | Zero-amount rows are harmless to skip |
+| 42 | Auto-fixed | Extra split details on an equal split can be ignored safely |
