@@ -20,6 +20,10 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Routes
+const authRoutes = require('./routes/auth');
+app.use('/api/auth', authRoutes);
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Splito API running on http://localhost:${PORT}`);
